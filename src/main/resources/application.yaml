@@ -3,10 +3,14 @@ spring:
     name: vibe-llm
   ai:
     openai:
-      base-url: http://172.16.50.149:12345/v1
+      base-url: http://172.16.50.152:12345/v1
       api-key: lm-studio
       chat:
         model: qwen3.5-4b-super-coder
+        max-tokens: 2048
 #        temperature: 1.0
 server:
   port : 8081
+logging:
+  level:
+    org.springframework.ai.chat.client.advisor: DEBUG
