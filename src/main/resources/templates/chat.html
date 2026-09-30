@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('RAG 비교 채팅')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav('chat')}"></nav>
+
+<main class="container pb-5">
+
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+        <div>
+            <h1 class="h4 mb-1">RAG 비교 채팅</h1>
+            <p class="text-body-secondary mb-0 small">
+                같은 질문을 <code>/rag-chat-streams</code> 와 <code>/plain-chat-streams</code> 에 동시에 보내
+                근거 사용 여부를 비교합니다. 두 응답 모두 도착하는 대로 스트리밍됩니다.
+            </p>
+        </div>
+        <a class="btn btn-sm btn-outline-secondary" th:href="@{/ui/documents}">문서 적재하기 →</a>
+    </div>
+
+    <form id="chat-form" class="card card-body mb-4" novalidate>
+        <div class="mb-3">
+            <label for="query" class="form-label">질문</label>
+            <textarea class="form-control" id="query" name="query" rows="2" required
+                      placeholder="적재한 문서에만 있는 내용을 물어보세요"></textarea>
+            <div class="invalid-feedback">질문을 입력하세요.</div>
+        </div>
+        <div class="row g-3 align-items-end">
+            <div class="col-sm-6">
+                <label for="conversationId" class="form-label">
+                    conversationId
+                    <span class="text-body-secondary fw-normal">— 대화 메모리 키</span>
+                </label>
+                <input type="text" class="form-control" id="conversationId" value="ui-default">
+            </div>
+            <div class="col-sm-6 d-flex gap-2">
+                <button type="submit" class="btn btn-primary" id="send-btn">전송</button>
+                <button type="reset" class="btn btn-outline-secondary" id="clear-btn">초기화</button>
+            </div>
+        </div>
+    </form>
+
+    <div id="error" class="alert alert-danger d-none" role="alert"></div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card h-100 border-primary-subtle">
+                <div class="card-header bg-primary-subtle d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">RAG · 근거 기반</span>
+                    <code class="small">/rag-chat-streams</code>
+                </div>
+                <div class="card-body">
+                    <div id="rag-pending" class="text-body-secondary d-none" aria-live="polite">
+                        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>검색 후 생성 중…
+                    </div>
+                    <p id="rag-empty" class="text-body-secondary fst-italic mb-0">질문을 전송하면 결과가 표시됩니다.</p>
+                    <div id="rag-answer" class="answer markdown-body d-none" aria-live="polite"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">일반 · RAG 없음</span>
+                    <code class="small">/plain-chat-streams</code>
+                </div>
+                <div class="card-body">
+                    <div id="plain-pending" class="text-body-secondary d-none" aria-live="polite">
+                        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>생성 중…
+                    </div>
+                    <p id="plain-empty" class="text-body-secondary fst-italic mb-0">질문을 전송하면 결과가 표시됩니다.</p>
+                    <div id="plain-answer" class="answer markdown-body d-none" aria-live="polite"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+<script th:src="@{/js/chat.js}"></script>
+</body>
+</html>

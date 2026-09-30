@@ -1,14 +1,42 @@
 spring:
   application:
     name: vibe-llm
+  datasource:
+    url: jdbc:postgresql://localhost:54320/postgres
+    username: postgres
+    password: 1234
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
   ai:
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
     openai:
-      base-url: http://172.16.50.152:12345/v1
+      base-url: http://127.0.0.1:12345/v1
       api-key: lm-studio
       chat:
         model: qwen3.5-4b-super-coder
         max-tokens: 2048
 #        temperature: 1.0
+      embedding:
+        model: text-embedding-qwen3-embedding-0.6b
+        encoding-format: float
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        dimensions: 1024
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        table-name: vector_store
+docling:
+  # docker-compose 의 docling-serve 포트 매핑(50010:5001) 과 일치해야 한다
+  base-url: http://localhost:50010
+  # CPU 이미지는 변환이 느리다. 분석은 청킹 + 마크다운 변환으로 두 번 변환한다
+  read-timeout: 10m
 server:
   port : 8081
 logging:

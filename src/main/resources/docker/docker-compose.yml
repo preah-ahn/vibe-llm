@@ -1,0 +1,53 @@
+# vibe-llm 로컬 인프라
+#
+#   pg-vector     : 대화 메모리(spring_ai_chat_memory) + 벡터 스토어(vector_store)
+#   docling-serve : 문서 파싱 + 청킹. 앱에 대체 파서가 없으므로 문서 적재에 필수다.
+#                   포트는 application.yaml 의 docling.base-url 과 반드시 일치
+#
+# 실행
+#   docker compose -f src/main/resources/docker/docker-compose.yml up -d
+#   docker compose -f src/main/resources/docker/docker-compose.yml ps
+#   docker compose -f src/main/resources/docker/docker-compose.yml down        # 컨테이너만 제거
+#   docker compose -f src/main/resources/docker/docker-compose.yml down -v     # 볼륨까지 삭제(데이터 소실)
+
+name: vibe-llm
+
+services:
+
+  pg-vector:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_PASSWORD: "1234"
+      POSTGRES_DB: postgres
+    ports:
+      # 좌측 포트는 application.yaml 의 jdbc:postgresql://localhost:54320/postgres 와 반드시 일치
+      - "54320:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  docling-serve:
+    image: quay.io/docling-project/docling-serve-cpu:v1.35.0
+    environment:
+      # http://localhost:5001/ui 에서 변환 결과를 바로 확인할 수 있다
+      DOCLING_SERVE_ENABLE_UI: "1"
+    ports:
+      - "50010:5001"
+    healthcheck:
+      # 이미지에 curl 이 없을 수 있어 파이썬으로 확인한다 (FastAPI 앱이라 python 은 항상 존재)
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      # CPU 이미지는 최초 기동 시 모델 적재에 시간이 걸린다
+      start_period: 180s
+    restart: unless-stopped
+
+volumes:
+  pgdata:
