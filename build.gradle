@@ -24,14 +24,27 @@ ext {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	// Spring Boot BOM 이 관리하지 않는 의존성이라 버전을 명시한다. 4.1.0 이 Boot 4.1 기준 빌드다.
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.1.0'
 	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 	implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc'
 	implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
 	implementation 'org.springframework.ai:spring-ai-rag'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0'
+	// Boot 4 는 autoconfiguration 이 모듈별로 쪼개져 있다. flyway-core 만 넣으면
+	// FlywayAutoConfiguration 이 없어 마이그레이션이 조용히 실행되지 않는다.
+	implementation 'org.springframework.boot:spring-boot-flyway'
+	// Flyway 10 부터 DB 별 지원이 별도 아티팩트다. 없으면 Postgres 를 인식하지 못한다.
+	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+	implementation 'org.mapstruct:mapstruct:1.6.3'
 	runtimeOnly 'org.postgresql:postgresql'
 	compileOnly 'org.projectlombok:lombok'
+	// 애노테이션 프로세서 순서가 중요하다. lombok 이 먼저 돌아 getter/setter 를 만든 뒤
+	// mapstruct 가 그것을 보고 매핑 코드를 생성해야 한다. binding 이 둘 사이를 연결한다.
 	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -42,6 +55,12 @@ dependencyManagement {
 	imports {
 		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
 	}
+}
+
+// 생성된 매퍼를 Spring 빈으로 만든다. 매퍼마다 componentModel = "spring" 을 쓰지 않아도 된다.
+// 테스트 소스에는 mapstruct-processor 가 없어 compileJava 에만 적용한다.
+tasks.named('compileJava') {
+	options.compilerArgs += ['-Amapstruct.defaultComponentModel=spring']
 }
 
 tasks.named('test') {

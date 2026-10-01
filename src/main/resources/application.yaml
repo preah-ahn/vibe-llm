@@ -5,6 +5,17 @@ spring:
     url: jdbc:postgresql://localhost:54320/postgres
     username: postgres
     password: 1234
+  flyway:
+    # 테이블이 이미 존재하는 기존 개발 DB 에서도 V1 이 실행되도록 baseline 을 0 으로 둔다.
+    # V1 은 멱등하므로 신규 DB 와 기존 DB 모두 같은 결과가 된다.
+    baseline-on-migrate: true
+    baseline-version: 0
+  jpa:
+    hibernate:
+      # 엔티티가 매핑한 테이블만 대상이다. Flyway 가 소유하는 테이블에는
+      # 매핑되는 엔티티가 없으므로 Hibernate 가 건드리지 않는다.
+      ddl-auto: update
+    open-in-view: false
   servlet:
     multipart:
       max-file-size: 20MB
@@ -14,31 +25,52 @@ spring:
       memory:
         repository:
           jdbc:
-            initialize-schema: always
+            # 스키마는 Flyway 가 소유한다. db/migration/V1__spring_ai_schema.sql 참고
+            initialize-schema: never
     openai:
       base-url: http://127.0.0.1:12345/v1
       api-key: lm-studio
       chat:
-        model: qwen3.5-4b-super-coder
+        model: text-embedding-qwen3-embedding-0.6b
         max-tokens: 2048
-#        temperature: 1.0
+      #        temperature: 1.0
       embedding:
         model: text-embedding-qwen3-embedding-0.6b
         encoding-format: float
     vectorstore:
       pgvector:
-        initialize-schema: true
+        # 스키마는 Flyway 가 소유한다. db/migration/V1__spring_ai_schema.sql 참고
+        initialize-schema: false
         dimensions: 1024
         index-type: HNSW
         distance-type: COSINE_DISTANCE
         table-name: vector_store
+mybatis:
+  configuration:
+    # ingested_at -> ingestedAt. DocumentSummary record 생성자 매핑에 필요하다.
+    map-underscore-to-camel-case: true
+    # record 생성자를 컬럼 순서가 아니라 이름으로 매핑한다. SELECT 절 순서가 바뀌어도 깨지지 않는다.
+    arg-name-based-constructor-auto-mapping: true
 docling:
   # docker-compose 의 docling-serve 포트 매핑(50010:5001) 과 일치해야 한다
   base-url: http://localhost:50010
   # CPU 이미지는 변환이 느리다. 분석은 청킹 + 마크다운 변환으로 두 번 변환한다
   read-timeout: 10m
+ai-engine:
+  # TODO: 실제 ai-engine 주소로 교체
+  end-point: http://localhost:9000
+  connect-timeout: 5s
+  read-timeout: 15s
 server:
-  port : 8081
+  port: 8888
 logging:
   level:
     org.springframework.ai.chat.client.advisor: DEBUG
+property:
+  attach:
+    store-location: /home/rebirth
+  integrate:
+    docling:
+      end-point: http://localhost:50010
+      options:
+        read-timeout: 10m
