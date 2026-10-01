@@ -19,7 +19,9 @@ public class DoclingRestClientInterceptor implements ClientHttpRequestIntercepto
 
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-        request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        if (request.getHeaders().getContentType() == null) {
+            request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        }
         return execution.execute(request, body);
     }
 }

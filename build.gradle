@@ -31,6 +31,7 @@ dependencies {
 	implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc'
 	implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
 	implementation 'org.springframework.ai:spring-ai-rag'
+	implementation 'org.springframework.ai:spring-ai-markdown-document-reader'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0'
 	// Boot 4 는 autoconfiguration 이 모듈별로 쪼개져 있다. flyway-core 만 넣으면
 	// FlywayAutoConfiguration 이 없어 마이그레이션이 조용히 실행되지 않는다.
@@ -65,4 +66,5 @@ tasks.named('compileJava') {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	systemProperty 'file.encoding', 'UTF-8'
 }

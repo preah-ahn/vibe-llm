@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url     : jdbc:postgresql://localhost:54320/postgres?currentSchema=public
+    username: postgres
+    password: 1234
+  servlet:
+    multipart:
+      enabled            : true
+      max-file-size      : 50MB
+      max-request-size   : 50MB
+      file-size-threshold: 50MB
+      location           : tmp/uploads/vibe-llm
+  ai:
+    openai:
+      base-url: http://127.0.0.1:12345/v1
+      api-key : lm-studio
+      chat:
+        model     : text-embedding-qwen3-embedding-0.6b
+        max-tokens: 2048
+      embedding:
+        model          : text-embedding-qwen3-embedding-0.6b
+        encoding-format: float
+
+property:
+  attach:
+    store-location: /home/rebirth
+  integrate:
+    docling:
+      end-point: http://localhost:50010

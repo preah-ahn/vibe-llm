@@ -2,7 +2,6 @@ package io.vibe.llm.basis.chart.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -46,8 +45,8 @@ public class ChatService {
     }
 
     public Flux<String> getStreamChat(String query, String conversationId) {
-        String systemMessage = new SystemPromptTemplate(new ClassPathResource("prompt/system-message.st")).render();
-        String userMessage = new PromptTemplate(new ClassPathResource("prompt/user-message.st")).render(Map.of("concept", query));
+        String systemMessage = new SystemPromptTemplate(new ClassPathResource("config/prompt/system-message.st")).render();
+        String userMessage = new PromptTemplate(new ClassPathResource("config/prompt/user-message.st")).render(Map.of("concept", query));
 
         return chatClient.prompt()
                 .system(systemMessage)

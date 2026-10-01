@@ -24,7 +24,7 @@ public class RagChatService {
     }
 
     public String ask(String query, String conversationId) {
-        String systemMessage = new SystemPromptTemplate(new ClassPathResource("prompt/rag-system-message.st")).render();
+        String systemMessage = new SystemPromptTemplate(new ClassPathResource("config/prompt/rag-system-message.st")).render();
 
         return ragChatClient.prompt()
                 .system(systemMessage)
@@ -39,7 +39,7 @@ public class RagChatService {
      * 검색과 증강은 첫 토큰이 나오기 전에 끝나므로, 비스트리밍보다 첫 응답이 늦을 수 있다.
      */
     public Flux<String> askStream(String query, String conversationId) {
-        String systemMessage = new SystemPromptTemplate(new ClassPathResource("prompt/rag-system-message.st")).render();
+        String systemMessage = new SystemPromptTemplate(new ClassPathResource("config/prompt/rag-system-message.st")).render();
 
         return ragChatClient.prompt()
                 .system(systemMessage)

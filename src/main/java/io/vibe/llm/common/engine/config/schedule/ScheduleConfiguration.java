@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  **********************************************************************************************************************/
 @Configuration
 @EnableScheduling
-@Profile({"local", "dev", "prod"})
+@Profile({"default", "dev", "prod"})
 public class ScheduleConfiguration {
 
 }

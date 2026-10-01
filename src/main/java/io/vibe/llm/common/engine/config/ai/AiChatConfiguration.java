@@ -12,6 +12,7 @@ import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.context.annotation.Bean;
@@ -55,7 +56,7 @@ public class AiChatConfiguration {
         // 기본 프롬프트는 영어이고 "모르면 모른다고 하라"가 user 메시지에 들어가 system 프롬프트를 덮는다.
         // 기본 documentFormatter 는 본문만 넘기므로 출처를 알 수 없다. 파일명을 함께 붙인다.
         ContextualQueryAugmenter queryAugmenter = ContextualQueryAugmenter.builder()
-                .promptTemplate(new PromptTemplate(new ClassPathResource("prompt/rag-augment.st")))
+                .promptTemplate(new PromptTemplate(new ClassPathResource("config/prompt/rag-augment.st")))
                 .allowEmptyContext(true)
                 .documentFormatter(documents -> documents.stream()
                         .map(document -> "[출처: " + document.getMetadata().get("source") + "]\n" + document.getText())
@@ -77,6 +78,15 @@ public class AiChatConfiguration {
     @Bean
     public ChatMemory chatMemory(JdbcChatMemoryRepository repository) {
         return MessageWindowChatMemory.builder().chatMemoryRepository(repository).maxMessages(5).build();
+    }
+
+    /**
+     * docling 은 마크다운 변환까지만 맡고, 청킹은 Spring AI 가 담당한다.
+     * chunkSize 는 기존 docling chunking_max_tokens 값과 동일하게 맞춘다.
+     */
+    @Bean
+    public TokenTextSplitter tokenTextSplitter() {
+        return TokenTextSplitter.builder().withChunkSize(1000).build();
     }
 //    public ChatClient chatClient(ChatClient.Builder builder) {
 //        return builder.defaultAdvisors(new TokenPrintAdvisor(), new SimpleLoggerAdvisor(), new SafeGuardAdvisor(List.of("games"))).build();

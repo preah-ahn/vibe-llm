@@ -6,122 +6,99 @@
 
 <main class="container pb-5">
 
-    <h1 class="h4 mb-1">문서</h1>
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <h1 class="h4 mb-0">문서 관리</h1>
+        <button type="button" class="btn btn-primary" id="add-btn">새 문서</button>
+    </div>
     <p class="text-body-secondary small mb-4">
-        업로드하면 파싱 → 청킹 → 임베딩 → pgvector 저장까지 한 번에 수행됩니다.
-        같은 파일명을 다시 올리면 이전 청크를 교체합니다.
+        문서 메타데이터와 첨부 파일을 등록·수정·삭제합니다. 상태는 표에서 바로 바꿀 수 있습니다.
     </p>
 
-    <section class="card card-body mb-4" aria-labelledby="upload-heading">
-        <h2 id="upload-heading" class="h6 mb-3">적재</h2>
-
-        <form id="upload-form" novalidate>
-            <div class="row g-3 align-items-end">
-                <div class="col-md-6">
-                    <label for="file" class="form-label">파일</label>
-                    <input class="form-control" type="file" id="file" name="file" required
-                           accept=".pdf,.docx,.doc,.rtf,.pptx,.ppt,.xlsx,.xls,.csv,.odt,.ods,.odp,.pages,.html,.htm,.xhtml,.mhtml,.mht,.md,.markdown,.txt,.adoc,.asciidoc,.asc,.tex,.epub,.eml,.msg,.boxnote,.xml,.json,.dclx,.vtt,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.gif,.wav,.mp3,.m4a,.flac,.ogg,.mp4,.mkv,.mov,.webm,.afp">
-                    <div class="form-text">
-                        docling-serve 가 처리하는 모든 형식 — 문서(pdf, docx, pptx, xlsx, odt, pages, rtf),
-                        텍스트(md, txt, adoc, tex, html, xml, csv), 전자책(epub), 메일(eml, msg),
-                        이미지(png, jpg, tiff — OCR), 오디오/비디오(wav, mp3, mp4, vtt) · 최대 20MB
-                    </div>
-                    <div class="invalid-feedback">파일을 선택하세요.</div>
-                </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary w-100" id="analyze-btn">분석하기</button>
-                </div>
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-success w-100" id="ingest-btn" disabled>적재하기</button>
-                </div>
-            </div>
-            <p class="form-text mb-0 mt-2" id="step-hint">
-                먼저 <strong>분석하기</strong> 로 청킹 결과를 확인한 뒤 <strong>적재하기</strong> 가 활성화됩니다.
-                분석 단계는 저장도 임베딩 호출도 하지 않습니다.
-            </p>
-        </form>
-
-        <div id="upload-result" class="mt-3" aria-live="polite"></div>
-
-        <div id="analysis" class="mt-3 d-none" aria-live="polite">
-            <h3 class="h6 mb-2">분석 결과</h3>
-
-            <div class="row g-2 mb-3" id="analysis-summary"></div>
-
-            <div id="analysis-existing" class="alert alert-warning py-2 d-none" role="alert"></div>
-            <div id="analysis-empty" class="alert alert-warning py-2 d-none" role="alert">
-                docling 이 추출한 텍스트가 없습니다. 적재해도 저장되는 청크가 0개입니다.
-            </div>
-
-            <details class="border rounded mb-3" id="markdown-panel" open>
-                <summary class="px-3 py-2 small fw-semibold">파싱 결과 (Markdown)</summary>
-                <div class="px-3 pb-3">
-                    <div class="btn-group btn-group-sm mb-2" role="group" aria-label="마크다운 보기 방식">
-                        <input type="radio" class="btn-check" name="md-view" id="md-view-rendered" checked>
-                        <label class="btn btn-outline-secondary" for="md-view-rendered">렌더</label>
-                        <input type="radio" class="btn-check" name="md-view" id="md-view-raw">
-                        <label class="btn btn-outline-secondary" for="md-view-raw">원문</label>
-                    </div>
-                    <div id="markdown-rendered" class="markdown-body"></div>
-                    <pre id="markdown-raw" class="markdown-raw d-none mb-0"></pre>
-                </div>
-            </details>
-
-            <div class="table-responsive">
-                <table class="table table-sm table-striped align-middle mb-0">
-                    <caption class="small">
-                        청킹은 docling HybridChunker 기본값이고, 토큰 수는 그 토크나이저(all-MiniLM-L6-v2) 기준이므로
-                        임베딩 모델의 실제 토크나이저와는 다를 수 있습니다.
-                    </caption>
-                    <thead>
-                    <tr>
-                        <th scope="col" class="text-end text-nowrap" style="width: 3rem">#</th>
-                        <th scope="col" class="text-end text-nowrap" style="width: 5rem">문자</th>
-                        <th scope="col" class="text-end text-nowrap" style="width: 5rem">토큰</th>
-                        <th scope="col">청크 전문</th>
-                    </tr>
-                    </thead>
-                    <tbody id="chunk-rows"></tbody>
-                </table>
-            </div>
+    <form id="search-form" class="row g-2 align-items-end mb-3" novalidate>
+        <div class="col-auto">
+            <label for="search-name" class="form-label small mb-1">이름</label>
+            <input type="text" class="form-control form-control-sm" id="search-name" placeholder="문서명 검색">
         </div>
-    </section>
-
-    <section aria-labelledby="list-heading">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h2 id="list-heading" class="h6 mb-0">적재된 문서</h2>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-btn">새로고침</button>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">검색</button>
         </div>
+    </form>
 
-        <div id="list-error" class="alert alert-danger d-none" role="alert"></div>
+    <div id="list-error" class="alert alert-danger d-none" role="alert"></div>
 
-        <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
-                <caption class="small">source 메타데이터 기준으로 집계한 결과입니다.</caption>
-                <thead>
-                <tr>
-                    <th scope="col">파일명</th>
-                    <th scope="col" class="text-end">청크</th>
-                    <th scope="col">적재 시각</th>
-                    <th scope="col" class="text-end">작업</th>
-                </tr>
-                </thead>
-                <tbody id="doc-rows">
-                <tr id="list-loading">
-                    <td colspan="4" class="text-body-secondary">
-                        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>불러오는 중…
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+            <tr>
+                <th scope="col" style="width: 4rem">ID</th>
+                <th scope="col">이름</th>
+                <th scope="col" style="width: 11rem">상태</th>
+                <th scope="col">파일</th>
+                <th scope="col" style="width: 10rem">등록일시</th>
+                <th scope="col" class="text-end" style="width: 9rem">작업</th>
+            </tr>
+            </thead>
+            <tbody id="doc-rows">
+            <tr id="list-loading">
+                <td colspan="6" class="text-body-secondary">
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>불러오는 중…
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p id="list-empty" class="text-body-secondary fst-italic d-none mt-3">등록된 문서가 없습니다.</p>
+
+    <div id="pagination-bar" class="d-flex justify-content-between align-items-center mt-3 d-none">
+        <div class="small text-body-secondary" id="pagination-info"></div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="페이지 이동">
+            <button type="button" class="btn btn-outline-secondary" id="page-prev">이전</button>
+            <button type="button" class="btn btn-outline-secondary" id="page-next">다음</button>
         </div>
-
-        <p id="list-empty" class="text-body-secondary fst-italic d-none mt-3">
-            적재된 문서가 없습니다. 위에서 파일을 올려보세요.
-        </p>
-    </section>
+    </div>
 
 </main>
+
+<div class="modal fade" id="document-modal" tabindex="-1" aria-labelledby="document-modal-title" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="document-form" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title h6" id="document-modal-title">새 문서</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="document-form-error" class="alert alert-danger d-none py-2" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label for="doc-name" class="form-label">이름</label>
+                        <input type="text" class="form-control" id="doc-name" maxlength="50" required>
+                        <div class="invalid-feedback">이름을 입력하세요 (최대 50자).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="doc-description" class="form-label">설명</label>
+                        <textarea class="form-control" id="doc-description" rows="3" maxlength="4000"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="doc-url" class="form-label">URL</label>
+                        <input type="url" class="form-control" id="doc-url" maxlength="4000">
+                    </div>
+                    <div class="mb-2">
+                        <label for="doc-file" class="form-label">파일</label>
+                        <input type="file" class="form-control" id="doc-file">
+                        <div class="form-text" id="doc-file-current"></div>
+                        <div class="invalid-feedback">파일을 선택하세요.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary" id="document-save-btn">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="delete-modal" tabindex="-1" aria-labelledby="delete-modal-title" aria-hidden="true">
     <div class="modal-dialog">
@@ -131,10 +108,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0">
-                    <strong id="delete-target"></strong> 의 모든 청크를 벡터 스토어에서 삭제합니다.
-                    되돌릴 수 없으며, 다시 쓰려면 파일을 재업로드해야 합니다.
-                </p>
+                <p class="mb-0"><strong id="delete-target"></strong> 문서를 삭제합니다. 되돌릴 수 없습니다.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>

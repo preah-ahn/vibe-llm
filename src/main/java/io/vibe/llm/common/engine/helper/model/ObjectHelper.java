@@ -1,9 +1,10 @@
 package io.vibe.llm.common.engine.helper.model;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 //import com.google.common.collect.ImmutableSet;
 //import kr.co.genie.cms.common.engine.constant.Constant;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -32,10 +33,11 @@ import java.util.stream.Stream;
  * @description object helper
  **********************************************************************************************************************/
 @Component
+@RequiredArgsConstructor
 public class ObjectHelper {
 
 	@Autowired
-	private ObjectHelper(ObjectMapper objectMapper) {
+	private ObjectHelper(JsonMapper objectMapper) {
 		ObjectHelper.objectMapper = objectMapper;
 	}
 
@@ -217,5 +219,5 @@ public class ObjectHelper {
 //		}
 //	}
 
-	private static ObjectMapper objectMapper = null;
+	private static JsonMapper objectMapper = null;
 }

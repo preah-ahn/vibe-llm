@@ -1,53 +1,53 @@
 (function () {
     'use strict';
 
-    const uploadForm = document.getElementById('upload-form');
-    const fileEl = document.getElementById('file');
-    const analyzeBtn = document.getElementById('analyze-btn');
-    const ingestBtn = document.getElementById('ingest-btn');
-    const uploadResult = document.getElementById('upload-result');
+    const API_BASE = '/api';
+    const PAGE_SIZE = 20;
 
-    const analysisBox = document.getElementById('analysis');
-    const analysisSummary = document.getElementById('analysis-summary');
-    const analysisExisting = document.getElementById('analysis-existing');
-    const analysisEmpty = document.getElementById('analysis-empty');
-    const chunkRows = document.getElementById('chunk-rows');
+    const STATUS_LABELS = {
+        WAITING: '대기',
+        MARKDOWN_IN_PROGRESS: '마크다운-진행',
+        CHUNKING_IN_PROGRESS: '청킹-진행',
+        EMBEDDING_IN_PROGRESS: '임베딩-진행',
+        COMPLETED: '완료'
+    };
 
-    const markdownPanel = document.getElementById('markdown-panel');
-    const markdownRendered = document.getElementById('markdown-rendered');
-    const markdownRaw = document.getElementById('markdown-raw');
-    const mdViewRendered = document.getElementById('md-view-rendered');
-    const mdViewRaw = document.getElementById('md-view-raw');
+    const searchForm = document.getElementById('search-form');
+    const searchName = document.getElementById('search-name');
+    const addBtn = document.getElementById('add-btn');
 
     const rows = document.getElementById('doc-rows');
     const listError = document.getElementById('list-error');
     const listEmpty = document.getElementById('list-empty');
-    const refreshBtn = document.getElementById('refresh-btn');
+
+    const paginationBar = document.getElementById('pagination-bar');
+    const paginationInfo = document.getElementById('pagination-info');
+    const pagePrev = document.getElementById('page-prev');
+    const pageNext = document.getElementById('page-next');
+
+    const documentModalEl = document.getElementById('document-modal');
+    const documentModal = new bootstrap.Modal(documentModalEl);
+    const documentModalTitle = document.getElementById('document-modal-title');
+    const documentForm = document.getElementById('document-form');
+    const documentFormError = document.getElementById('document-form-error');
+    const docNameEl = document.getElementById('doc-name');
+    const docDescriptionEl = document.getElementById('doc-description');
+    const docUrlEl = document.getElementById('doc-url');
+    const docFileEl = document.getElementById('doc-file');
+    const docFileCurrent = document.getElementById('doc-file-current');
+    const documentSaveBtn = document.getElementById('document-save-btn');
 
     const deleteModalEl = document.getElementById('delete-modal');
     const deleteModal = new bootstrap.Modal(deleteModalEl);
     const deleteTarget = document.getElementById('delete-target');
     const deleteConfirm = document.getElementById('delete-confirm');
-    let pendingSource = null;
 
-    // 분석한 파일과 적재 대상이 어긋나지 않도록, 분석 시점의 File 객체를 들고 있는다.
-    let analyzedFile = null;
-
-    function alertHtml(kind, text) {
-        const div = document.createElement('div');
-        div.className = 'alert alert-' + kind + ' mb-0';
-        div.setAttribute('role', 'alert');
-        div.textContent = text;
-        return div;
-    }
-
-    function showUpload(kind, text) {
-        uploadResult.replaceChildren(alertHtml(kind, text));
-    }
-
-    function clearUpload() {
-        uploadResult.replaceChildren();
-    }
+    let currentPage = 0;
+    let currentName = '';
+    let lastPageData = null;
+    let editingId = null;
+    let existingFile = null;
+    let pendingDeleteId = null;
 
     function formatBytes(bytes) {
         if (bytes < 1024) {
@@ -67,92 +67,14 @@
         return isNaN(d.getTime()) ? iso : d.toLocaleString('ko-KR');
     }
 
-    // 파일이 바뀌면 이전 분석 결과는 무효다. 적재 버튼을 다시 잠근다.
-    function resetAnalysis() {
-        analyzedFile = null;
-        ingestBtn.disabled = true;
-        analysisBox.classList.add('d-none');
-        analysisSummary.replaceChildren();
-        analysisExisting.classList.add('d-none');
-        analysisEmpty.classList.add('d-none');
-        markdownRendered.replaceChildren();
-        markdownRaw.textContent = '';
-        chunkRows.replaceChildren();
-    }
-
-    function summaryCard(label, value) {
-        const col = document.createElement('div');
-        col.className = 'col-6 col-lg-3';
-
-        const box = document.createElement('div');
-        box.className = 'border rounded p-2 h-100';
-
-        const dt = document.createElement('div');
-        dt.className = 'small text-body-secondary';
-        dt.textContent = label;
-
-        const dd = document.createElement('div');
-        dd.className = 'fw-semibold text-break';
-        dd.textContent = value;
-
-        box.append(dt, dd);
-        col.appendChild(box);
-        return col;
-    }
-
-    function renderAnalysis(result) {
-        analysisSummary.replaceChildren(
-            summaryCard('파일', result.source + ' · ' + formatBytes(result.sizeBytes)),
-            summaryCard('청크', result.chunkCount + '개'),
-            summaryCard('추출 텍스트', result.textLength.toLocaleString('ko-KR') + '자 · '
-                    + result.totalTokens.toLocaleString('ko-KR') + '토큰'),
-            summaryCard('임베딩', (result.embeddingModel || '미설정') + ' · ' + result.dimensions + '차원')
-        );
-
-        if (result.existingChunks > 0) {
-            analysisExisting.textContent = '이미 적재된 문서입니다 — 기존 '
-                    + result.existingChunks + '개 청크(' + formatTime(result.existingIngestedAt)
-                    + ')를 삭제하고 교체합니다.';
-            analysisExisting.classList.remove('d-none');
-        } else {
-            analysisExisting.classList.add('d-none');
-        }
-
-        analysisEmpty.classList.toggle('d-none', result.chunkCount > 0);
-
-        renderMarkdown(markdownRendered, result.markdown);
-        markdownRaw.textContent = result.markdown || '';
-        markdownPanel.classList.toggle('d-none', !result.markdown);
-
-        chunkRows.replaceChildren();
-        result.chunks.forEach(function (chunk) {
-            const tr = document.createElement('tr');
-
-            const idx = document.createElement('th');
-            idx.scope = 'row';
-            idx.className = 'text-end fw-normal';
-            idx.textContent = chunk.index;
-            tr.appendChild(idx);
-
-            const chars = document.createElement('td');
-            chars.className = 'text-end';
-            chars.textContent = chunk.chars.toLocaleString('ko-KR');
-            tr.appendChild(chars);
-
-            const tokens = document.createElement('td');
-            tokens.className = 'text-end';
-            tokens.textContent = chunk.tokens.toLocaleString('ko-KR');
-            tr.appendChild(tokens);
-
-            const text = document.createElement('td');
-            text.className = 'small markdown-cell';
-            renderMarkdown(text, chunk.text);
-            tr.appendChild(text);
-
-            chunkRows.appendChild(tr);
-        });
-
-        analysisBox.classList.remove('d-none');
+    function loadingRow() {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.className = 'text-body-secondary';
+        td.textContent = '불러오는 중…';
+        tr.appendChild(td);
+        return tr;
     }
 
     async function loadList() {
@@ -160,191 +82,309 @@
         listEmpty.classList.add('d-none');
         rows.replaceChildren(loadingRow());
 
+        const params = new URLSearchParams();
+        if (currentName) {
+            params.set('name', currentName);
+        }
+        params.set('page', currentPage);
+        params.set('size', PAGE_SIZE);
+        params.set('sort', 'createdAt,desc');
+
         try {
-            const response = await fetch('/documents');
+            const response = await fetch(API_BASE + '/documents/pages?' + params.toString());
+            const text = await response.text();
             if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
+                throw new Error('HTTP ' + response.status + ' — ' + text.slice(0, 200));
             }
-            render(await response.json());
+            lastPageData = JSON.parse(text);
+            render(lastPageData);
         } catch (err) {
             rows.replaceChildren();
+            paginationBar.classList.add('d-none');
             listError.textContent = '목록을 불러오지 못했습니다 — ' + err.message;
             listError.classList.remove('d-none');
         }
     }
 
-    function loadingRow() {
-        const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = 4;
-        td.className = 'text-body-secondary';
-        td.textContent = '불러오는 중…';
-        tr.appendChild(td);
-        return tr;
+    function statusSelect(item) {
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm';
+        Object.keys(STATUS_LABELS).forEach(function (key) {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = STATUS_LABELS[key];
+            if (key === item.statusType) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+
+        select.addEventListener('change', async function () {
+            const previous = item.statusType;
+            select.disabled = true;
+            try {
+                const response = await fetch(API_BASE + '/documents/' + item.id + '/status', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ statusType: select.value })
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error('HTTP ' + response.status + ' — ' + text.slice(0, 200));
+                }
+                item.statusType = select.value;
+            } catch (err) {
+                select.value = previous;
+                listError.textContent = '상태 변경 실패 — ' + err.message;
+                listError.classList.remove('d-none');
+            } finally {
+                select.disabled = false;
+            }
+        });
+
+        return select;
     }
 
-    function render(items) {
+    function render(pageData) {
         rows.replaceChildren();
 
+        const items = pageData.content || [];
         if (!items.length) {
             listEmpty.classList.remove('d-none');
+            paginationBar.classList.add('d-none');
             return;
         }
 
         items.forEach(function (item) {
             const tr = document.createElement('tr');
+            tr.style.cursor = 'pointer';
+            tr.addEventListener('click', function (event) {
+                if (event.target.closest('button') || event.target.closest('select')) {
+                    return;
+                }
+                window.location.href = '/ui/documents/' + item.id;
+            });
+
+            const id = document.createElement('td');
+            id.textContent = item.id;
+            tr.appendChild(id);
 
             const name = document.createElement('td');
             name.className = 'text-break';
-            name.textContent = item.source === null ? '(source 없음)' : item.source;
+            name.textContent = item.name;
             tr.appendChild(name);
 
-            const chunks = document.createElement('td');
-            chunks.className = 'text-end';
-            chunks.textContent = item.chunks;
-            tr.appendChild(chunks);
+            const status = document.createElement('td');
+            status.appendChild(statusSelect(item));
+            tr.appendChild(status);
+
+            const file = document.createElement('td');
+            file.className = 'small text-break';
+            file.textContent = item.file ? item.file.originalName + ' · ' + formatBytes(item.file.size) : '-';
+            tr.appendChild(file);
 
             const at = document.createElement('td');
             at.className = 'text-body-secondary small';
-            at.textContent = formatTime(item.ingestedAt);
+            at.textContent = formatTime(item.createdAt);
             tr.appendChild(at);
 
             const actions = document.createElement('td');
-            actions.className = 'text-end';
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn btn-sm btn-outline-danger';
-            btn.textContent = '삭제';
-            btn.addEventListener('click', function () {
-                pendingSource = item.source;
-                deleteTarget.textContent = item.source;
+            actions.className = 'text-end text-nowrap';
+
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'btn btn-sm btn-outline-secondary me-1';
+            editBtn.textContent = '수정';
+            editBtn.addEventListener('click', function () {
+                openEditModal(item.id);
+            });
+            actions.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'btn btn-sm btn-outline-danger';
+            deleteBtn.textContent = '삭제';
+            deleteBtn.addEventListener('click', function () {
+                pendingDeleteId = item.id;
+                deleteTarget.textContent = item.name;
                 deleteModal.show();
             });
-            actions.appendChild(btn);
-            tr.appendChild(actions);
+            actions.appendChild(deleteBtn);
 
+            tr.appendChild(actions);
             rows.appendChild(tr);
         });
+
+        renderPagination(pageData);
     }
 
-    function syncMarkdownView() {
-        markdownRendered.classList.toggle('d-none', !mdViewRendered.checked);
-        markdownRaw.classList.toggle('d-none', mdViewRendered.checked);
+    function renderPagination(pageData) {
+        paginationBar.classList.remove('d-none');
+        paginationInfo.textContent = '전체 ' + pageData.totalElements + '건 · '
+                + (pageData.number + 1) + ' / ' + Math.max(pageData.totalPages, 1) + ' 페이지';
+        pagePrev.disabled = pageData.first;
+        pageNext.disabled = pageData.last;
     }
 
-    mdViewRendered.addEventListener('change', syncMarkdownView);
-    mdViewRaw.addEventListener('change', syncMarkdownView);
-
-    fileEl.addEventListener('change', function () {
-        fileEl.classList.remove('is-invalid');
-        clearUpload();
-        resetAnalysis();
+    pagePrev.addEventListener('click', function () {
+        if (currentPage > 0) {
+            currentPage -= 1;
+            loadList();
+        }
     });
 
-    // 1단계 — 분석하기
-    uploadForm.addEventListener('submit', async function (event) {
-        event.preventDefault();
-
-        if (!fileEl.files.length) {
-            fileEl.classList.add('is-invalid');
-            return;
+    pageNext.addEventListener('click', function () {
+        if (lastPageData && !lastPageData.last) {
+            currentPage += 1;
+            loadList();
         }
-        fileEl.classList.remove('is-invalid');
+    });
 
-        const file = fileEl.files[0];
+    searchForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        currentName = searchName.value.trim();
+        currentPage = 0;
+        loadList();
+    });
+
+    function resetDocumentForm() {
+        documentForm.reset();
+        documentFormError.classList.add('d-none');
+        docNameEl.classList.remove('is-invalid');
+        docFileEl.classList.remove('is-invalid');
+        docFileCurrent.textContent = '';
+        existingFile = null;
+    }
+
+    function openAddModal() {
+        editingId = null;
+        resetDocumentForm();
+        documentModalTitle.textContent = '새 문서';
+        documentModal.show();
+    }
+
+    async function openEditModal(id) {
+        resetDocumentForm();
+        documentModalTitle.textContent = '문서 수정';
+
+        try {
+            const response = await fetch(API_BASE + '/documents/' + id);
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            const item = await response.json();
+
+            editingId = id;
+            docNameEl.value = item.name || '';
+            docDescriptionEl.value = item.description || '';
+            docUrlEl.value = item.url || '';
+            existingFile = item.file || null;
+            docFileCurrent.textContent = existingFile
+                    ? '현재 파일: ' + existingFile.originalName + ' · ' + formatBytes(existingFile.size) + ' (선택 시 교체)'
+                    : '';
+
+            documentModal.show();
+        } catch (err) {
+            listError.textContent = '문서를 불러오지 못했습니다 — ' + err.message;
+            listError.classList.remove('d-none');
+        }
+    }
+
+    async function uploadAttach(file) {
         const body = new FormData();
         body.append('file', file);
 
-        analyzeBtn.disabled = true;
-        resetAnalysis();
-        showUpload('secondary', '분석 중… docling 파싱과 청킹만 수행하며 저장하지 않습니다. CPU 변환은 수십 초가 걸릴 수 있습니다.');
-
-        try {
-            const response = await fetch('/documents/analysis', { method: 'POST', body: body });
-            const text = await response.text();
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status + ' — ' + text.slice(0, 200));
-            }
-
-            const result = JSON.parse(text);
-            renderAnalysis(result);
-            clearUpload();
-
-            analyzedFile = file;
-            ingestBtn.disabled = false;
-        } catch (err) {
-            showUpload('danger', '분석 실패 — ' + err.message);
-        } finally {
-            analyzeBtn.disabled = false;
+        const response = await fetch('/attaches', { method: 'POST', body: body });
+        const text = await response.text();
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status + ' — ' + text.slice(0, 200));
         }
-    });
+        return JSON.parse(text);
+    }
 
-    // 2단계 — 적재하기
-    ingestBtn.addEventListener('click', async function () {
-        if (analyzedFile === null) {
+    addBtn.addEventListener('click', openAddModal);
+
+    documentForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const name = docNameEl.value.trim();
+        const selectedFile = docFileEl.files[0] || null;
+
+        let valid = true;
+        docNameEl.classList.toggle('is-invalid', !name);
+        valid = valid && !!name;
+        docFileEl.classList.toggle('is-invalid', !selectedFile && !existingFile);
+        valid = valid && (!!selectedFile || !!existingFile);
+        if (!valid) {
             return;
         }
 
-        const body = new FormData();
-        body.append('file', analyzedFile);
-
-        analyzeBtn.disabled = true;
-        ingestBtn.disabled = true;
-        showUpload('secondary', '적재 중… 임베딩 호출이 포함되어 시간이 걸릴 수 있습니다.');
+        documentFormError.classList.add('d-none');
+        documentSaveBtn.disabled = true;
 
         try {
-            const response = await fetch('/documents', { method: 'POST', body: body });
+            const fileMeta = selectedFile ? await uploadAttach(selectedFile) : existingFile;
+            const payload = {
+                name: name,
+                description: docDescriptionEl.value.trim() || null,
+                url: docUrlEl.value.trim() || null,
+                file: {
+                    path: fileMeta.path,
+                    name: fileMeta.name,
+                    originalName: fileMeta.originalName,
+                    size: fileMeta.size
+                }
+            };
+
+            const response = editingId === null
+                    ? await fetch(API_BASE + '/documents', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                    : await fetch(API_BASE + '/documents/' + editingId, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
             const text = await response.text();
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status + ' — ' + text.slice(0, 200));
             }
 
-            const result = JSON.parse(text);
-            if (result.chunks === 0) {
-                // 스캔 PDF 처럼 텍스트 레이어가 없으면 저장할 청크가 없다.
-                showUpload('warning', result.source + ' — 추출된 텍스트가 없어 저장된 청크가 0개입니다.');
-            } else {
-                showUpload('success', result.source + ' — ' + result.chunks + '개 청크를 저장했습니다.');
-            }
-
-            uploadForm.reset();
-            resetAnalysis();
+            documentModal.hide();
             await loadList();
         } catch (err) {
-            showUpload('danger', '적재 실패 — ' + err.message);
-            ingestBtn.disabled = false;
+            documentFormError.textContent = '저장 실패 — ' + err.message;
+            documentFormError.classList.remove('d-none');
         } finally {
-            analyzeBtn.disabled = false;
+            documentSaveBtn.disabled = false;
         }
     });
 
     deleteConfirm.addEventListener('click', async function () {
-        if (pendingSource === null) {
+        if (pendingDeleteId === null) {
             return;
         }
 
         deleteConfirm.disabled = true;
         try {
-            const response = await fetch('/documents?source=' + encodeURIComponent(pendingSource), {
-                method: 'DELETE'
-            });
-            const text = await response.text();
+            const response = await fetch(API_BASE + '/documents/' + pendingDeleteId, { method: 'DELETE' });
             if (!response.ok) {
+                const text = await response.text();
                 throw new Error('HTTP ' + response.status + ' — ' + text.slice(0, 200));
             }
-
-            const result = JSON.parse(text);
-            showUpload('success', result.source + ' — ' + result.deleted + '개 청크를 삭제했습니다.');
             await loadList();
         } catch (err) {
-            showUpload('danger', '삭제 실패 — ' + err.message);
+            listError.textContent = '삭제 실패 — ' + err.message;
+            listError.classList.remove('d-none');
         } finally {
             deleteConfirm.disabled = false;
-            pendingSource = null;
+            pendingDeleteId = null;
             deleteModal.hide();
         }
     });
 
-    refreshBtn.addEventListener('click', loadList);
     loadList();
 })();

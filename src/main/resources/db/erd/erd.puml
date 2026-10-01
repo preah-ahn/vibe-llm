@@ -1,0 +1,44 @@
+@startuml erd
+hide circle
+skinparam linetype ortho
+
+entity "vector_store" as vector_store {
+  * id : uuid <<PK>>
+  --
+  content   : text
+  metadata  : json
+  embedding : vector(1024)
+}
+
+entity "spring_ai_chat_memory" as spring_ai_chat_memory {
+  * conversation_id : varchar(36)
+  * sequence_id     : bigint
+  --
+  content   : text
+  type      : varchar(10)
+  timestamp : timestamp
+}
+
+entity "tb_document" as tb_document {
+  * document_id : bigint <<PK>>
+  --
+  name        : varchar(50)
+  description : varchar(4000)
+  url         : varchar(4000)
+  created_at  : timestamp
+}
+
+entity "tb_file" as tb_file {
+  * file_id : bigint <<PK>>
+  --
+  name          : varchar(50)
+  path          : varchar(200)
+  original_name : varchar(200)
+  size          : bigint
+  created_at    : timestamp
+  document_id   : bigint <<FK>>
+}
+
+tb_document ||--o{ tb_file : document_id
+
+@enduml

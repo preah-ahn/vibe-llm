@@ -21,7 +21,7 @@ import java.util.List;
  **********************************************************************************************************************/
 @RestController
 @RequiredArgsConstructor
-public class DocumentController {
+public class DocumentFileController {
 
     private final DocumentIngestService documentIngestService;
 

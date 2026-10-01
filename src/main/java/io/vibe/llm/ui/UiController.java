@@ -30,6 +30,11 @@ public class UiController {
         return "documents";
     }
 
+    @GetMapping("/ui/documents/{documentId}")
+    public String documentDetail() {
+        return "document-detail";
+    }
+
     @GetMapping("/ui/stream")
     public String stream() {
         return "stream";
