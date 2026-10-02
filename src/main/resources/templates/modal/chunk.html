@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="chunk-modal">
+    <!-- ============ 청크 프리뷰 모달 ============ -->
+    <div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-inverse-surface/50 backdrop-blur-sm" id="modal-chunk" onclick="if(event.target===this) closeModal('modal-chunk')">
+        <div class="relative w-full max-w-[1080px] max-h-[90vh] bg-surface-container-lowest rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="flex flex-col px-space-xl pt-space-lg pb-space-md bg-surface-container-lowest shadow-sm z-10">
+                <div class="flex items-center justify-between gap-space-md">
+                    <div class="flex items-center gap-space-md min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center flex-shrink-0 text-on-primary-fixed shadow-sm">
+                            <span class="material-symbols-outlined text-[24px]">splitscreen</span>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-space-sm flex-wrap">
+                                <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">청크 상세 정보</h2>
+                                <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline tracking-normal">(Chunk Inspector)</span>
+                                <span class="inline-flex items-center gap-1.5 px-space-xs py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold" id="chunk-status-chip">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span><span id="chunk-status-label"></span>
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-space-xs mt-0.5 min-w-0">
+                                <span class="font-code-inline text-code-inline text-primary font-semibold" id="chunk-doc-code"></span>
+                                <span class="text-outline text-[12px]">•</span>
+                                <span class="font-body-sm text-body-sm text-on-surface-variant truncate" id="chunk-doc-name"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-space-sm flex-shrink-0">
+                        <button class="h-9 px-space-md bg-surface-container text-on-surface hover:bg-surface-container-high rounded-xl font-title-sm text-title-sm flex items-center gap-space-xs transition-colors shadow-sm" id="chunk-download-btn">
+                            <span class="material-symbols-outlined text-[18px]">download</span>전체 청크 JSON
+                        </button>
+                        <button class="w-9 h-9 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" onclick="closeModal('modal-chunk')" title="닫기 (ESC)">
+                            <span class="material-symbols-outlined text-[20px]">close</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-between px-space-xl py-space-sm bg-surface-container-low gap-space-md">
+                <div class="relative flex-1 max-w-md">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                    <input class="w-full h-8 pl-9 pr-space-sm bg-surface-container-lowest rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-outline shadow-sm focus:outline-none" id="chunk-search-input" placeholder="청크 내용 또는 인덱스 검색 (예: #1, functional)..." type="text">
+                </div>
+                <div class="flex items-center gap-space-md flex-shrink-0">
+                    <span class="px-space-xs py-1 rounded-md bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold" id="chunk-total-count">전체 (0)</span>
+                </div>
+            </div>
+            <div class="flex flex-1 min-h-0 bg-surface-container-lowest">
+                <div class="w-80 flex-shrink-0 bg-surface flex flex-col overflow-y-auto">
+                    <div class="p-space-sm space-y-space-xs" id="chunk-list"></div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-space-xl space-y-space-lg bg-surface-container-lowest" id="chunk-detail"></div>
+            </div>
+            <div class="px-8 py-5 bg-surface-container-low flex items-center justify-end border-t border-outline-variant/30 gap-3 z-10">
+                <button class="h-10 px-5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-on-surface hover:bg-surface-container font-medium text-title-sm shadow-sm transition-colors" onclick="closeModal('modal-chunk')" type="button">닫기</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            let chunks = [];
+            let currentDoc = null;
+            let activeIndex = 0;
+
+            function renderList(filterText) {
+                const listEl = document.querySelector('#chunk-list');
+                const filtered = chunks.filter(c => {
+                    if (!filterText) return true;
+                    const needle = filterText.toLowerCase().replace('#', '');
+                    return String(c.index + 1).includes(needle) || c.text.toLowerCase().includes(filterText.toLowerCase());
+                });
+                if (!filtered.length) {
+                    listEl.innerHTML = '<p class="p-space-md text-on-surface-variant font-body-sm text-body-sm text-center">일치하는 청크가 없습니다.</p>';
+                    return;
+                }
+                listEl.innerHTML = filtered.map(c => {
+                    const active = c.index === activeIndex;
+                    return `
+                        <div class="p-space-md rounded-xl cursor-pointer shadow-sm relative overflow-hidden transition-all ${active ? 'bg-surface-container-high' : 'bg-surface-container-lowest hover:bg-surface-container'}" data-chunk-index="${c.index}">
+                            ${active ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>' : ''}
+                            <div class="flex items-center justify-between mb-1.5 ${active ? 'pl-1' : ''}">
+                                <span class="px-2 py-0.5 rounded-full font-code-inline text-[11px] ${active ? 'bg-primary text-on-primary font-bold' : 'bg-surface-container-high text-on-surface-variant font-medium'}">Chunk #${String(c.index + 1).padStart(2, '0')}</span>
+                                <span class="font-code-inline text-code-inline ${active ? 'text-primary font-semibold' : 'text-on-surface-variant'}">${c.tokens} Tokens</span>
+                            </div>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1 ${active ? 'pl-1' : ''}">${escapeHtml(c.text.slice(0, 120))}${c.text.length > 120 ? '...' : ''}</p>
+                            <div class="flex items-center justify-between mt-2 pt-1 ${active ? 'pl-1' : ''} text-on-surface-variant font-label-sm text-label-sm">
+                                <span>${c.chars.toLocaleString()} 자</span>
+                            </div>
+                        </div>`;
+                }).join('');
+                listEl.querySelectorAll('[data-chunk-index]').forEach(el => {
+                    el.addEventListener('click', () => {
+                        activeIndex = Number(el.dataset.chunkIndex);
+                        renderList(document.querySelector('#chunk-search-input').value.trim());
+                        renderDetail();
+                    });
+                });
+            }
+
+            function renderDetail() {
+                const detailEl = document.querySelector('#chunk-detail');
+                const chunk = chunks.find(c => c.index === activeIndex);
+                if (!chunk) {
+                    detailEl.innerHTML = '<p class="text-on-surface-variant font-body-md text-body-md">청크를 선택해 주세요.</p>';
+                    return;
+                }
+                detailEl.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-space-sm">
+                            <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Chunk #${String(chunk.index + 1).padStart(2, '0')} 상세 정보</span>
+                            <span class="px-space-xs py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-code-inline text-label-sm font-semibold">Sequence ${chunk.index + 1} of ${chunks.length}</span>
+                        </div>
+                        <div class="flex items-center gap-space-xs">
+                            <button class="h-8 px-2.5 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md text-label-md flex items-center gap-1 transition-colors disabled:opacity-30 disabled:pointer-events-none" id="chunk-prev-btn" ${chunk.index === 0 ? 'disabled' : ''}>
+                                <span class="material-symbols-outlined text-[16px]">arrow_back</span>이전 청크
+                            </button>
+                            <button class="h-8 px-2.5 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md text-label-md flex items-center gap-1 transition-colors disabled:opacity-30 disabled:pointer-events-none" id="chunk-next-btn" ${chunk.index === chunks.length - 1 ? 'disabled' : ''}>
+                                다음 청크<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-space-sm p-space-md rounded-xl bg-surface-container-low shadow-sm">
+                        <div class="flex flex-col">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">글자 수</span>
+                            <span class="font-body-md text-body-md text-on-surface font-medium mt-0.5">${chunk.chars.toLocaleString()} 자</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">토큰 수</span>
+                            <span class="font-code-inline text-code-inline text-on-surface font-semibold mt-0.5">${chunk.tokens.toLocaleString()} tokens</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col space-y-space-xs">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-space-xs">
+                                <span class="material-symbols-outlined text-primary text-[18px]">notes</span>
+                                <span class="font-title-sm text-title-sm text-on-surface font-semibold">청크 원문 텍스트 (Chunk Text Content)</span>
+                            </div>
+                            <button class="h-7 px-2 rounded-md bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm flex items-center gap-1 transition-colors" id="chunk-copy-btn">
+                                <span class="material-symbols-outlined text-[14px]">content_copy</span>텍스트 복사
+                            </button>
+                        </div>
+                        <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm leading-relaxed font-body-md text-body-md text-on-surface whitespace-pre-line select-text">${escapeHtml(chunk.text)}</div>
+                    </div>`;
+
+                const prevBtn = document.querySelector('#chunk-prev-btn');
+                const nextBtn = document.querySelector('#chunk-next-btn');
+                const copyBtn = document.querySelector('#chunk-copy-btn');
+                if (prevBtn) prevBtn.addEventListener('click', () => { activeIndex -= 1; renderList(document.querySelector('#chunk-search-input').value.trim()); renderDetail(); });
+                if (nextBtn) nextBtn.addEventListener('click', () => { activeIndex += 1; renderList(document.querySelector('#chunk-search-input').value.trim()); renderDetail(); });
+                if (copyBtn) copyBtn.addEventListener('click', () => navigator.clipboard?.writeText(chunk.text));
+            }
+
+            document.querySelector('#chunk-search-input').addEventListener('input', e => renderList(e.target.value.trim()));
+            document.querySelector('#chunk-download-btn').addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify(chunks, null, 2)], { type: 'application/json;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `DOC-${currentDoc ? currentDoc.id : 'chunks'}.json`;
+                a.click();
+            });
+
+            window.openChunkModal = async function (documentId) {
+                openModal('modal-chunk');
+                document.querySelector('#chunk-list').innerHTML = '<p class="p-space-md text-on-surface-variant font-body-sm text-body-sm text-center">불러오는 중...</p>';
+                document.querySelector('#chunk-detail').innerHTML = '';
+                try {
+                    const [doc, analysis] = await Promise.all([
+                        apiFetch(`/documents/${documentId}`),
+                        apiFetch(`/documents/${documentId}/analysis`),
+                    ]);
+                    currentDoc = doc;
+                    chunks = analysis.chunks;
+                    activeIndex = 0;
+
+                    const status = statusMeta(doc.statusType);
+                    document.querySelector('#chunk-status-label').textContent = status.label;
+                    document.querySelector('#chunk-doc-code').textContent = `DOC-${doc.id}`;
+                    document.querySelector('#chunk-doc-name').textContent = doc.name;
+                    document.querySelector('#chunk-total-count').textContent = `전체 (${analysis.chunkCount})`;
+                    document.querySelector('#chunk-search-input').value = '';
+
+                    renderList('');
+                    renderDetail();
+                } catch (e) {
+                    document.querySelector('#chunk-list').innerHTML = `<p class="p-space-md text-error font-body-sm text-body-sm text-center">${escapeHtml(e.message)}</p>`;
+                }
+            };
+        })();
+    </script>
+</th:block>
+</body>
+</html>

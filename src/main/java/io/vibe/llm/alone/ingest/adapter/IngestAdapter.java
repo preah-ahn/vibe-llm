@@ -4,9 +4,7 @@ import io.vibe.llm.basis.document.entity.DocumentChunk;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @since       2026.10.01
@@ -21,7 +19,7 @@ public class IngestAdapter {
     public List<org.springframework.ai.document.Document> ingest(List<DocumentChunk> chunks) {
         return chunks.stream()
                 .map(chunk -> org.springframework.ai.document.Document.builder()
-                        .id(UUID.nameUUIDFromBytes(("chunk:" + chunk.getId()).getBytes(StandardCharsets.UTF_8)).toString())
+                        .id(chunk.toVectorId())
                         .text(chunk.getText())
                         .metadata("documentId", chunk.getDocument().getId())
                         .metadata("chunkIndex", chunk.getChunkIndex())

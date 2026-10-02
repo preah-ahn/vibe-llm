@@ -17,20 +17,20 @@ public class UiController {
 
     @GetMapping("/")
     public String root() {
-        return "redirect:/ui/documents";
+        return "redirect:/ui/document";
     }
 
-    @GetMapping("/ui/document")
+    @GetMapping("/ui/chat")
     public String chat() {
         return "chat";
     }
 
-    @GetMapping("/ui/documents")
+    @GetMapping("/ui/document")
     public String documents() {
-        return "documents";
+        return "document";
     }
 
-    @GetMapping("/ui/documents/{documentId}")
+    @GetMapping("/ui/document/{documentId}")
     public String documentDetail() {
         return "document-detail";
     }

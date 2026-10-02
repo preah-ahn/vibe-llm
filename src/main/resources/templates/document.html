@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('문서 보관함')}"></head>
+<body class="bg-surface font-body-md text-on-surface antialiased">
+
+<aside th:replace="~{fragments/layout :: sidebar('documents')}"></aside>
+
+<div class="pl-64 flex flex-col min-h-screen">
+    <header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center px-space-xl gap-space-lg justify-between">
+        <div class="flex items-center gap-space-sm">
+            <h1 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight whitespace-nowrap">문서 보관함</h1>
+        </div>
+    </header>
+    <main class="w-full min-w-0 pt-16 bg-surface flex-1 px-8 py-6">
+        <div class="flex flex-col w-full gap-space-lg mx-auto">
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl flex flex-col gap-space-lg w-full">
+                <div class="flex flex-col gap-space-md w-full">
+                    <div class="flex flex-col sm:flex-row items-center gap-space-sm justify-between w-full">
+                        <div class="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
+                            <div class="relative w-full">
+                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                                <input class="w-full h-9 pl-9 pr-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest transition-colors" id="search-input" placeholder="문서 이름 검색..." type="text">
+                            </div>
+                            <button class="h-9 px-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-title-sm text-label-md flex items-center gap-1 shadow-xs transition-colors whitespace-nowrap flex-shrink-0" id="search-btn" type="button">
+                                <span class="material-symbols-outlined text-[16px]">search</span>
+                                <span>검색</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-end w-full sm:w-auto">
+                            <button class="h-9 px-space-lg bg-primary hover:bg-primary-container text-on-primary rounded-lg font-title-sm text-title-sm flex items-center gap-1.5 shadow-sm transition-all duration-200 whitespace-nowrap" onclick="openRegisterModal()" type="button">
+                                <span class="material-symbols-outlined text-[20px]">add</span>
+                                <span>새 문서 등록</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded-lg w-full">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                        <tr class="bg-surface-container-low text-on-surface-variant font-label-md text-label-md uppercase tracking-wider whitespace-nowrap">
+                            <th class="py-3 px-space-md text-center w-16 whitespace-nowrap">번호</th>
+                            <th class="py-3 px-space-md whitespace-nowrap">이름</th>
+                            <th class="py-3 px-space-md whitespace-nowrap">파일</th>
+                            <th class="py-3 px-space-md text-center w-28 whitespace-nowrap">상태구분</th>
+                            <th class="py-3 px-space-md text-center w-28 whitespace-nowrap">미리보기</th>
+                            <th class="py-3 px-space-md w-44 text-right whitespace-nowrap">등록일자</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y-0 text-on-surface" id="document-rows"></tbody>
+                    </table>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-surface-container/60 w-full" id="pagination"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div th:replace="~{modal/register :: register-modal}"></div>
+<div th:replace="~{modal/edit :: edit-modal}"></div>
+<div th:replace="~{modal/markdown :: markdown-modal}"></div>
+<div th:replace="~{modal/chunk :: chunk-modal}"></div>
+
+<script>
+    function openModal(id) {
+        document.querySelector(`#${id}`).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.querySelector(`#${id}`).classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        }
+    });
+</script>
+
+<script>
+    const API_BASE = '/api';
+
+    async function request(url, options = {}) {
+        const res = await fetch(url, options);
+        if (!res.ok) {
+            let message = res.statusText;
+            try { message = (await res.json()).message || message; } catch (ignored) {}
+            throw new Error(message);
+        }
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+    }
+
+    function apiFetch(path, options = {}) {
+        return request(`${API_BASE}${path}`, options);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function formatBytes(bytes) {
+        if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+        if (bytes >= 1024) return (bytes / 1024).toFixed(1) + 'KB';
+        return bytes + 'B';
+    }
+
+    function formatDateTime(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    const STATUS_META = {
+        WAITING               : { label: '대기',       dot: 'bg-outline',   badge: 'bg-surface-container text-on-surface-variant font-medium' },
+        MARKDOWN_IN_COMPLETED : { label: '마크다운-완료', dot: 'bg-secondary', badge: 'bg-secondary-container text-on-secondary-container font-semibold' },
+        CHUNKING_IN_COMPLETED : { label: '청킹-완료',    dot: 'bg-primary',   badge: 'bg-surface-variant text-primary font-semibold' },
+        COMPLETED             : { label: '완료',        dot: 'bg-tertiary',  badge: 'bg-tertiary-fixed text-on-tertiary-fixed font-semibold' },
+    };
+
+    function statusMeta(statusType) {
+        return STATUS_META[statusType] || STATUS_META.WAITING;
+    }
+
+    function fileIcon(originalName) {
+        const ext = String(originalName).split('.').pop().toLowerCase();
+        if (ext === 'pdf') return { icon: 'picture_as_pdf', cls: 'text-error' };
+        if (['doc', 'docx'].includes(ext)) return { icon: 'description', cls: 'text-primary' };
+        if (['xlsx', 'xls', 'csv'].includes(ext)) return { icon: 'table_chart', cls: 'text-tertiary' };
+        if (['png', 'jpg', 'jpeg', 'bmp', 'webp', 'tiff'].includes(ext)) return { icon: 'image', cls: 'text-secondary' };
+        return { icon: 'draft', cls: 'text-on-surface-variant' };
+    }
+
+    function renderRow(doc) {
+        const status = statusMeta(doc.statusType);
+        const icon = fileIcon(doc.file.originalName);
+        const markdownReady = doc.statusType !== 'WAITING';
+        const chunkReady = doc.statusType === 'CHUNKING_IN_COMPLETED' || doc.statusType === 'COMPLETED';
+        const markdownBtn = markdownReady
+            ? `<button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="마크다운-보기" onclick="openMarkdownModal(${doc.id})"><span class="material-symbols-outlined text-[18px]">markdown</span></button>`
+            : `<button type="button" disabled class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant disabled:opacity-30 disabled:pointer-events-none" title="마크다운-보기 (대기중)"><span class="material-symbols-outlined text-[18px]">markdown</span></button>`;
+        const chunkBtn = chunkReady
+            ? `<button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="청킹-보기" onclick="openChunkModal(${doc.id})"><span class="material-symbols-outlined text-[18px]">splitscreen</span></button>`
+            : `<button type="button" disabled class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant disabled:opacity-30 disabled:pointer-events-none" title="청킹-보기 (미완료)"><span class="material-symbols-outlined text-[18px]">splitscreen</span></button>`;
+
+        return `
+            <tr class="hover:bg-surface-container-low transition-colors group border-b border-surface-container/60">
+                <td class="py-space-md px-space-md text-center font-code-inline text-on-surface-variant font-medium text-body-sm whitespace-nowrap">${doc.id}</td>
+                <td class="py-space-md px-space-md">
+                    <div class="flex flex-col gap-0.5">
+                        <a class="font-title-sm text-title-sm text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap" href="#" onclick="openEditModal(${doc.id});return false;">
+                            <span>${escapeHtml(doc.name)}</span>
+                            <span class="material-symbols-outlined text-[16px] text-tertiary opacity-0 group-hover:opacity-100 transition-opacity">edit_document</span>
+                        </a>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline whitespace-nowrap">DOC-${doc.id}</span>
+                    </div>
+                </td>
+                <td class="py-space-md px-space-md whitespace-nowrap">
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors max-w-full truncate cursor-pointer" title="${escapeHtml(doc.file.originalName)} (${formatBytes(doc.file.size)})">
+                        <span class="material-symbols-outlined text-[18px] ${icon.cls}">${icon.icon}</span>
+                        <span class="font-label-sm text-label-sm truncate">${escapeHtml(doc.file.originalName)}</span>
+                        <span class="text-on-surface-variant font-label-sm text-label-sm flex-shrink-0">${formatBytes(doc.file.size)}</span>
+                    </div>
+                </td>
+                <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full ${status.badge} font-label-sm text-label-sm">
+                        <span class="w-1.5 h-1.5 rounded-full ${status.dot}"></span>${status.label}
+                    </span>
+                </td>
+                <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                    <div class="inline-flex items-center justify-center gap-1.5">
+                        ${markdownBtn}
+                        ${chunkBtn}
+                    </div>
+                </td>
+                <td class="py-space-md px-space-md text-right font-code-inline text-body-sm text-on-surface-variant whitespace-nowrap">${formatDateTime(doc.createdAt)}</td>
+            </tr>`;
+    }
+
+    let currentPage = 0;
+    let pageSize = 20;
+
+    function renderPagination(pageResult) {
+        const el = document.querySelector('#pagination');
+        const { totalElements, number, size, totalPages, numberOfElements, first, last } = pageResult;
+        if (!totalElements) {
+            el.innerHTML = '';
+            return;
+        }
+
+        const from = number * size + 1;
+        const to = number * size + numberOfElements;
+
+        const windowSize = 5;
+        const start = Math.max(0, Math.min(number - Math.floor(windowSize / 2), totalPages - windowSize));
+        const end = Math.min(totalPages, start + windowSize);
+
+        let pageButtons = '';
+        for (let p = start; p < end; p++) {
+            const active = p === number;
+            pageButtons += `<button type="button" class="h-8 px-3 inline-flex items-center justify-center rounded-lg font-label-md text-label-md transition-colors ${active ? 'bg-primary text-on-primary font-title-sm shadow-xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'}" ${active ? 'aria-current="page"' : ''} onclick="loadDocuments(${p})">${p + 1}</button>`;
+        }
+
+        el.innerHTML = `
+            <div class="flex items-center gap-space-sm font-label-md text-label-md text-on-surface-variant">전체 <strong class="text-on-surface font-semibold">${totalElements}</strong>건 중 <strong class="text-on-surface font-semibold">${from}-${to}</strong>개 표시</div>
+            <div class="flex items-center gap-space-lg flex-wrap justify-center sm:justify-end">
+                <div class="flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant">
+                    <span>표시 개수:</span>
+                    <div class="relative inline-flex items-center">
+                        <select class="h-8 pl-2.5 pr-7 bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md rounded-lg appearance-none cursor-pointer focus:outline-none transition-colors" id="page-size-select">
+                            ${[10, 20, 50, 100].map(s => `<option value="${s}" ${s === size ? 'selected' : ''}>${s}개씩</option>`).join('')}
+                        </select>
+                        <span class="material-symbols-outlined absolute right-1.5 pointer-events-none text-[18px] text-on-surface-variant">expand_more</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button type="button" ${first ? 'disabled' : ''} class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant disabled:opacity-30 disabled:pointer-events-none hover:bg-surface-container transition-colors" title="이전 페이지" onclick="loadDocuments(${number - 1})"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+                    ${pageButtons}
+                    <button type="button" ${last ? 'disabled' : ''} class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant disabled:opacity-30 disabled:pointer-events-none hover:bg-surface-container transition-colors" title="다음 페이지" onclick="loadDocuments(${number + 1})"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                </div>
+            </div>`;
+
+        document.querySelector('#page-size-select').addEventListener('change', e => {
+            pageSize = Number(e.target.value);
+            loadDocuments(0);
+        });
+    }
+
+    async function loadDocuments(page = 0) {
+        currentPage = page;
+        const name = document.querySelector('#search-input').value.trim();
+        const query = new URLSearchParams({ page: String(page), size: String(pageSize), sort: 'createdAt,desc' });
+        if (name) query.set('name', name);
+
+        const tbody = document.querySelector('#document-rows');
+        tbody.innerHTML = `<tr><td colspan="6" class="py-space-xl text-center text-on-surface-variant font-body-sm text-body-sm">불러오는 중...</td></tr>`;
+        try {
+            const pageResult = await apiFetch(`/documents/pages?${query}`);
+            if (!pageResult.content.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-space-xl text-center text-on-surface-variant font-body-sm text-body-sm">등록된 문서가 없습니다.</td></tr>`;
+                document.querySelector('#pagination').innerHTML = '';
+                return;
+            }
+            tbody.innerHTML = pageResult.content.map(renderRow).join('');
+            renderPagination(pageResult);
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="6" class="py-space-xl text-center text-error font-body-sm text-body-sm">${escapeHtml(e.message)}</td></tr>`;
+            document.querySelector('#pagination').innerHTML = '';
+        }
+    }
+
+    document.querySelector('#search-btn').addEventListener('click', () => loadDocuments(0));
+    document.querySelector('#search-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') loadDocuments(0);
+    });
+    document.addEventListener('documents:changed', () => loadDocuments(currentPage));
+
+    loadDocuments();
+</script>
+
+</body>
+</html>

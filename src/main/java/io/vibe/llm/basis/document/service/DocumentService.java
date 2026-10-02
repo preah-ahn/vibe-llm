@@ -9,6 +9,7 @@ import io.vibe.llm.basis.document.repository.DocumentRepository;
 import io.vibe.llm.common.attach.entity.File;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.List;
 public class DocumentService {
 
     private final DocumentRepository documentRepository;
+    private final VectorStore vectorStore;
 
     @Transactional(readOnly = true)
     public Page<Document> getPage(Request.Find find, Pageable pageable) {
@@ -80,7 +82,15 @@ public class DocumentService {
     }
 
     public void remove(Long id) {
+        Document document = get(id);
+        List<String> vectorIds = document.getChunks().stream()
+                .map(DocumentChunk::toVectorId)
+                .toList();
+
         documentRepository.deleteById(id);
+        if (!vectorIds.isEmpty()) {
+            vectorStore.delete(vectorIds);
+        }
     }
 
     /** 변환은 하지 않는다 — 파이프라인이 미리 채워 둔 마크다운/청크를 테이블에서 그대로 조회한다. */

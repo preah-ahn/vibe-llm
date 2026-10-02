@@ -28,13 +28,13 @@
         </div>
         <div class="px-space-md py-space-sm">
             <nav class="space-y-1 flex flex-col">
-                <a th:href="@{/ui/documents}"
+                <a th:href="@{/ui/document}"
                    th:classappend="${active == 'documents'} ? 'bg-surface-container-high text-primary font-title-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'"
                    class="flex items-center gap-space-md px-space-md py-space-sm rounded-xl transition-colors">
                     <span class="material-symbols-outlined text-[20px]">folder</span>
                     <span class="font-title-sm text-title-sm flex-1 truncate">문서 보관함</span>
                 </a>
-                <a th:href="@{/ui/document}"
+                <a th:href="@{/ui/chat}"
                    th:classappend="${active == 'ai-chat'} ? 'bg-surface-container-high text-primary font-title-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'"
                    class="flex items-center gap-space-md px-space-md py-space-sm rounded-xl transition-colors">
                     <span class="material-symbols-outlined text-[20px]">auto_awesome</span>

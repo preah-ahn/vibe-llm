@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="markdown-modal">
+    <!-- ============ 마크다운 프리뷰 모달 ============ -->
+    <div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 lg:p-8 bg-on-surface/40 backdrop-blur-sm" id="modal-markdown" onclick="if(event.target===this) closeModal('modal-markdown')">
+        <div class="relative flex flex-col w-full max-w-[980px] max-h-[90vh] bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-space-xl py-space-lg bg-surface-container-lowest shadow-sm z-20">
+                <div class="flex items-center gap-space-md min-w-0">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-fixed text-primary flex-shrink-0">
+                        <span class="material-symbols-outlined text-[24px]">markdown</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <div class="flex items-center gap-space-sm flex-wrap">
+                            <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold truncate tracking-tight" id="md-title"></h2>
+                            <span class="px-space-xs py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold flex items-center gap-1 flex-shrink-0" id="md-status-chip">
+                                <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span><span id="md-status-label"></span>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md mt-0.5 truncate">
+                            <span class="font-code-inline text-code-inline px-1 py-0.2 bg-surface-container rounded text-primary" id="md-doc-code"></span><span>·</span>
+                            <span class="truncate" id="md-file-name"></span><span>·</span>
+                            <span class="text-outline" id="md-created-at"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-space-sm flex-shrink-0 ml-space-md">
+                    <a class="inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-title-sm text-title-sm transition-colors" href="#" id="md-download-link">
+                        <span class="material-symbols-outlined text-[18px]">download</span><span>다운로드 (.md)</span>
+                    </a>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-xl text-outline hover:bg-surface-container hover:text-on-surface transition-colors ml-1" onclick="closeModal('modal-markdown')" title="닫기 (Esc)">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center justify-between px-space-xl py-space-sm bg-surface-container-low shadow-[0_1px_0px_rgba(0,0,0,0.03)] z-10">
+                <div class="flex items-center p-0.5 bg-surface-container rounded-lg">
+                    <button class="flex items-center gap-1.5 px-space-md py-1 rounded-md bg-surface-container-lowest text-primary font-title-sm text-title-sm shadow-sm transition-all" id="tab-preview" onclick="switchTab('preview')">
+                        <span class="material-symbols-outlined text-[16px]">visibility</span><span>미리보기</span>
+                    </button>
+                    <button class="flex items-center gap-1.5 px-space-md py-1 rounded-md text-on-surface-variant hover:text-on-surface font-title-sm text-title-sm transition-all" id="tab-raw" onclick="switchTab('raw')">
+                        <span class="material-symbols-outlined text-[16px]">code</span><span>원문 보기 (Raw)</span>
+                    </button>
+                </div>
+                <div class="flex items-center gap-space-md font-label-md text-label-md text-on-surface-variant">
+                    <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-outline">notes</span><span>총 <strong class="text-on-surface font-semibold" id="md-word-count">-</strong> 단어</span></div>
+                    <span class="text-outline">/</span><span class="text-outline">UTF-8 인코딩</span>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-space-xl bg-surface-container-lowest">
+                <div class="space-y-space-xl max-w-4xl mx-auto text-on-surface" id="content-preview"></div>
+                <div class="hidden max-w-4xl mx-auto" id="content-raw">
+                    <pre class="p-space-lg rounded-xl bg-surface-container-low font-code-inline text-code-inline leading-relaxed text-on-surface select-all overflow-x-auto whitespace-pre-wrap" id="content-raw-text"></pre>
+                </div>
+            </div>
+            <div class="px-8 py-5 bg-surface-container-low flex items-center justify-between z-20 flex-shrink-0 border-t border-surface-container">
+                <div></div>
+                <button class="h-10 px-5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-on-surface hover:bg-surface-container font-medium text-title-sm shadow-sm transition-colors" onclick="closeModal('modal-markdown')" type="button">닫기</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script>
+        function switchTab(tab) {
+            const preview = document.querySelector('#content-preview');
+            const raw = document.querySelector('#content-raw');
+            const tabPreview = document.querySelector('#tab-preview');
+            const tabRaw = document.querySelector('#tab-raw');
+            const activeClasses = ['bg-surface-container-lowest', 'text-primary', 'shadow-sm'];
+            const inactiveClasses = ['text-on-surface-variant'];
+            if (tab === 'preview') {
+                preview.classList.remove('hidden');
+                raw.classList.add('hidden');
+                tabPreview.classList.add(...activeClasses);
+                tabRaw.classList.remove(...activeClasses);
+            } else {
+                preview.classList.add('hidden');
+                raw.classList.remove('hidden');
+                tabRaw.classList.add(...activeClasses);
+                tabPreview.classList.remove(...activeClasses);
+            }
+        }
+
+        window.openMarkdownModal = async function (documentId) {
+            openModal('modal-markdown');
+            const preview = document.querySelector('#content-preview');
+            preview.innerHTML = '<p class="text-on-surface-variant font-body-md text-body-md">불러오는 중...</p>';
+            try {
+                const [doc, analysis] = await Promise.all([
+                    apiFetch(`/documents/${documentId}`),
+                    apiFetch(`/documents/${documentId}/analysis`),
+                ]);
+                const markdown = analysis.markdown || '';
+                const status = statusMeta(doc.statusType);
+
+                document.querySelector('#md-title').textContent = doc.name;
+                document.querySelector('#md-status-label').textContent = status.label;
+                document.querySelector('#md-doc-code').textContent = `DOC-${doc.id}`;
+                document.querySelector('#md-file-name').textContent = `파일: ${doc.file.originalName}`;
+                document.querySelector('#md-created-at').textContent = `등록일시: ${formatDateTime(doc.createdAt)}`;
+                document.querySelector('#md-word-count').textContent = markdown.trim() ? markdown.trim().split(/\s+/).length.toLocaleString() : '0';
+
+                const downloadLink = document.querySelector('#md-download-link');
+                const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = `${doc.name}.md`;
+
+                document.querySelector('#content-raw-text').textContent = markdown;
+                preview.innerHTML = (typeof marked !== 'undefined')
+                    ? marked.parse(markdown)
+                    : `<pre class="whitespace-pre-wrap font-body-md text-body-md">${escapeHtml(markdown)}</pre>`;
+                switchTab('preview');
+            } catch (e) {
+                preview.innerHTML = `<p class="text-error font-body-md text-body-md">${escapeHtml(e.message)}</p>`;
+            }
+        };
+    </script>
+</th:block>
+</body>
+</html>

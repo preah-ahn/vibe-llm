@@ -5,6 +5,9 @@ import io.vibe.llm.common.engine.annotation.entity.Description;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
 /**
  * @since       2026.10.01
  * @author      preah
@@ -45,4 +48,9 @@ public class DocumentChunk extends Base {
     @JoinColumn(name = "document_id", nullable = false)
     @Description("문서아이디")
     private Document document;
+
+    /** 벡터 스토어(vector_store.id, uuid) 에 쓰는 id. chunk id 로부터 매번 같은 값이 나온다. */
+    public String toVectorId() {
+        return UUID.nameUUIDFromBytes(("chunk:" + id).getBytes(StandardCharsets.UTF_8)).toString();
+    }
 }
