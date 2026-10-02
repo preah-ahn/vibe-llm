@@ -24,13 +24,20 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class ChunkAdapter {
 
+    private final TokenTextSplitter tokenTextSplitter;
+
     private final Encoding tokenEncoding = Encodings.newLazyEncodingRegistry().getEncoding(EncodingType.CL100K_BASE);
 
-    /** 마크다운 텍스트를 Spring AI 의 {@link MarkdownDocumentReader} 로 섹션 단위 청크로 바꾼다. */
+    /**
+     * 마크다운 텍스트를 Spring AI 의 {@link MarkdownDocumentReader} 로 섹션 단위로 나눈 뒤,
+     * 섹션 하나가 과도하게 길어 임베딩 모델의 최대 입력 토큰을 넘지 않도록 {@link TokenTextSplitter} 로 한 번 더 쪼갠다.
+     */
     public List<Chunk> toMarkdownChunk(String markdown) {
         Resource resource = new ByteArrayResource(markdown.getBytes(StandardCharsets.UTF_8));
         MarkdownDocumentReader reader = new MarkdownDocumentReader(resource, MarkdownDocumentReaderConfig.defaultConfig());
-        List<org.springframework.ai.document.Document> documents = reader.get();
+        List<org.springframework.ai.document.Document> sections = reader.get();
+
+        List<org.springframework.ai.document.Document> documents = tokenTextSplitter.split(sections);
 
         return IntStream.range(0, documents.size())
                 .mapToObj(index -> {

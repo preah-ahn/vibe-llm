@@ -1,6 +1,8 @@
 package io.vibe.llm.alone.schedule.service;
 
 import io.vibe.llm.alone.chunk.adapter.ChunkAdapter;
+import io.vibe.llm.alone.integrate.embedding.adapter.EmbeddingAdapter;
+import io.vibe.llm.alone.ingest.adapter.IngestAdapter;
 import io.vibe.llm.alone.integrate.docling.adapter.DoclingAdapter;
 import io.vibe.llm.basis.document.entity.DocumentChunk;
 import io.vibe.llm.basis.document.enumerate.DocumentStatusType;
@@ -26,6 +28,8 @@ public class ScheduleService {
     private final DocumentRepository documentRepository;
     private final DoclingAdapter doclingAdapter;
     private final ChunkAdapter chunkAdapter;
+    private final IngestAdapter ingestAdapter;
+    private final EmbeddingAdapter embeddingAdapter;
 
     @Scheduled(fixedDelay = 60_000)
     @Transactional
@@ -42,7 +46,7 @@ public class ScheduleService {
     @Scheduled(fixedDelay = 60_000)
     @Transactional
     public void markdownToChunk() {
-        documentRepository.findFirstByStatusTypeAndMarkdownIsNotNullOrderByIdDesc(DocumentStatusType.MARKDOWN_IN_COMPLETED).ifPresent(document -> {
+        documentRepository.findFirstByStatusTypeAndMarkdownIsNotNullOrderByIdAsc(DocumentStatusType.MARKDOWN_IN_COMPLETED).ifPresent(document -> {
             List<ChunkAdapter.Chunk> chunks = chunkAdapter.toMarkdownChunk(document.getMarkdown());
 
             document.getChunks().addAll(chunks.stream()
@@ -58,6 +62,18 @@ public class ScheduleService {
 
             documentRepository.save(document);
             log.info("document markdown chunked: {} {}", document.getId(), chunks);
+        });
+    }
+
+    @Scheduled(fixedDelay = 60_000)
+    public void chunkToEmbedding() {
+        documentRepository.findFirstByStatusTypeOrderByIdAsc(DocumentStatusType.CHUNKING_IN_COMPLETED).ifPresent(document -> {
+            List<org.springframework.ai.document.Document> documents = ingestAdapter.ingest(document.getChunks());
+            embeddingAdapter.embed(documents);
+            document.setStatusType(DocumentStatusType.COMPLETED);
+
+            documentRepository.save(document);
+            log.info("document chunks embedded: {}", document.getId());
         });
     }
 }

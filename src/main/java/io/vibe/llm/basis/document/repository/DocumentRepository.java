@@ -4,6 +4,7 @@ import io.vibe.llm.basis.document.entity.Document;
 import io.vibe.llm.basis.document.enumerate.DocumentStatusType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -19,5 +20,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     Optional<Document> findFirstByStatusTypeAndMarkdownIsNullOrderByIdAsc(DocumentStatusType statusType);
 
-    Optional<Document> findFirstByStatusTypeAndMarkdownIsNotNullOrderByIdDesc(DocumentStatusType statusType);
+    Optional<Document> findFirstByStatusTypeAndMarkdownIsNotNullOrderByIdAsc(DocumentStatusType statusType);
+
+    @EntityGraph(attributePaths = "chunks")
+    Optional<Document> findFirstByStatusTypeOrderByIdAsc(DocumentStatusType statusType);
 }

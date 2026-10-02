@@ -1,124 +1,921 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('문서')}"></head>
-<body>
-<nav th:replace="~{fragments/layout :: nav('documents')}"></nav>
+<head th:replace="~{fragments/layout :: head('문서 보관함')}"></head>
+<body class="bg-surface font-body-md text-on-surface antialiased">
 
-<main class="container pb-5">
+<aside th:replace="~{fragments/layout :: sidebar('documents')}"></aside>
 
-    <div class="d-flex justify-content-between align-items-center mb-1">
-        <h1 class="h4 mb-0">문서 관리</h1>
-        <button type="button" class="btn btn-primary" id="add-btn">새 문서</button>
-    </div>
-    <p class="text-body-secondary small mb-4">
-        문서 메타데이터와 첨부 파일을 등록·수정·삭제합니다. 상태는 표에서 바로 바꿀 수 있습니다.
-    </p>
-
-    <form id="search-form" class="row g-2 align-items-end mb-3" novalidate>
-        <div class="col-auto">
-            <label for="search-name" class="form-label small mb-1">이름</label>
-            <input type="text" class="form-control form-control-sm" id="search-name" placeholder="문서명 검색">
+<div class="pl-64 flex flex-col min-h-screen">
+    <header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center px-space-xl gap-space-lg justify-between">
+        <div class="flex items-center gap-space-sm">
+            <h1 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight whitespace-nowrap">문서 보관함</h1>
         </div>
-        <div class="col-auto">
-            <button type="submit" class="btn btn-sm btn-outline-secondary">검색</button>
-        </div>
-    </form>
-
-    <div id="list-error" class="alert alert-danger d-none" role="alert"></div>
-
-    <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
-            <thead>
-            <tr>
-                <th scope="col" style="width: 4rem">ID</th>
-                <th scope="col">이름</th>
-                <th scope="col" style="width: 11rem">상태</th>
-                <th scope="col">파일</th>
-                <th scope="col" style="width: 10rem">등록일시</th>
-                <th scope="col" class="text-end" style="width: 9rem">작업</th>
-            </tr>
-            </thead>
-            <tbody id="doc-rows">
-            <tr id="list-loading">
-                <td colspan="6" class="text-body-secondary">
-                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>불러오는 중…
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <p id="list-empty" class="text-body-secondary fst-italic d-none mt-3">등록된 문서가 없습니다.</p>
-
-    <div id="pagination-bar" class="d-flex justify-content-between align-items-center mt-3 d-none">
-        <div class="small text-body-secondary" id="pagination-info"></div>
-        <div class="btn-group btn-group-sm" role="group" aria-label="페이지 이동">
-            <button type="button" class="btn btn-outline-secondary" id="page-prev">이전</button>
-            <button type="button" class="btn btn-outline-secondary" id="page-next">다음</button>
-        </div>
-    </div>
-
-</main>
-
-<div class="modal fade" id="document-modal" tabindex="-1" aria-labelledby="document-modal-title" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="document-form" novalidate>
-                <div class="modal-header">
-                    <h2 class="modal-title h6" id="document-modal-title">새 문서</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="document-form-error" class="alert alert-danger d-none py-2" role="alert"></div>
-
-                    <div class="mb-3">
-                        <label for="doc-name" class="form-label">이름</label>
-                        <input type="text" class="form-control" id="doc-name" maxlength="50" required>
-                        <div class="invalid-feedback">이름을 입력하세요 (최대 50자).</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="doc-description" class="form-label">설명</label>
-                        <textarea class="form-control" id="doc-description" rows="3" maxlength="4000"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="doc-url" class="form-label">URL</label>
-                        <input type="url" class="form-control" id="doc-url" maxlength="4000">
-                    </div>
-                    <div class="mb-2">
-                        <label for="doc-file" class="form-label">파일</label>
-                        <input type="file" class="form-control" id="doc-file">
-                        <div class="form-text" id="doc-file-current"></div>
-                        <div class="invalid-feedback">파일을 선택하세요.</div>
+    </header>
+    <main class="w-full min-w-0 pt-16 bg-surface flex-1 px-8 py-6">
+        <div class="flex flex-col w-full gap-space-lg mx-auto">
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl flex flex-col gap-space-lg w-full">
+                <div class="flex flex-col gap-space-md w-full">
+                    <div class="flex flex-col sm:flex-row items-center gap-space-sm justify-between w-full">
+                        <div class="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
+                            <div class="relative w-full">
+                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                                <input class="w-full h-9 pl-9 pr-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest transition-colors" placeholder="문서 제목 또는 작성자 검색..." type="text">
+                            </div>
+                            <button class="h-9 px-4 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-title-sm text-label-md flex items-center gap-1 shadow-xs transition-colors whitespace-nowrap flex-shrink-0" type="button">
+                                <span class="material-symbols-outlined text-[16px]">search</span>
+                                <span>검색</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-end w-full sm:w-auto">
+                            <button class="h-9 px-space-lg bg-primary hover:bg-primary-container text-on-primary rounded-lg font-title-sm text-title-sm flex items-center gap-1.5 shadow-sm transition-all duration-200 whitespace-nowrap" onclick="openModal('modal-register')" type="button">
+                                <span class="material-symbols-outlined text-[20px]">add</span>
+                                <span>새 문서 등록</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-primary" id="document-save-btn">저장</button>
+                <div class="overflow-x-auto rounded-lg w-full">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                        <tr class="bg-surface-container-low text-on-surface-variant font-label-md text-label-md uppercase tracking-wider whitespace-nowrap">
+                            <th class="py-3 px-space-md text-center w-16 whitespace-nowrap">번호</th>
+                            <th class="py-3 px-space-md whitespace-nowrap">이름</th>
+                            <th class="py-3 px-space-md whitespace-nowrap">파일</th>
+                            <th class="py-3 px-space-md text-center w-28 whitespace-nowrap">상태구분</th>
+                            <th class="py-3 px-space-md text-center w-28 whitespace-nowrap">미리보기</th>
+                            <th class="py-3 px-space-md w-44 text-right whitespace-nowrap">등록일자</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y-0 text-on-surface">
+                        <tr class="hover:bg-surface-container-low transition-colors group border-b border-surface-container/60">
+                            <td class="py-space-md px-space-md text-center font-code-inline text-on-surface-variant font-medium text-body-sm whitespace-nowrap">24</td>
+                            <td class="py-space-md px-space-md">
+                                <div class="flex flex-col gap-0.5">
+                                    <a class="font-title-sm text-title-sm text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap" href="#" onclick="openModal('modal-edit');return false;">
+                                        <span>AI 어시스턴트 기능 명세서 PRD</span>
+                                        <span class="material-symbols-outlined text-[16px] text-tertiary opacity-0 group-hover:opacity-100 transition-opacity">edit_document</span>
+                                    </a>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline whitespace-nowrap">DOC-8941</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors max-w-full truncate cursor-pointer" title="PRD_v1.4_final.pdf (4.2 MB)">
+                                    <span class="material-symbols-outlined text-[18px] text-error">picture_as_pdf</span>
+                                    <span class="font-label-sm text-label-sm truncate">PRD_v1.4_final.pdf</span>
+                                    <span class="text-on-surface-variant font-label-sm text-label-sm flex-shrink-0">4.2MB</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>완료
+                                </span>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <div class="inline-flex items-center justify-center gap-1.5">
+                                    <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="마크다운-보기" onclick="openModal('modal-markdown')">
+                                        <span class="material-symbols-outlined text-[18px]">markdown</span>
+                                    </button>
+                                    <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="청킹-보기" onclick="openModal('modal-chunk')">
+                                        <span class="material-symbols-outlined text-[18px]">splitscreen</span>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-right font-code-inline text-body-sm text-on-surface-variant whitespace-nowrap">2025.02.24 14:30</td>
+                        </tr>
+                        <tr class="hover:bg-surface-container-low transition-colors group border-b border-surface-container/60">
+                            <td class="py-space-md px-space-md text-center font-code-inline text-on-surface-variant font-medium text-body-sm whitespace-nowrap">23</td>
+                            <td class="py-space-md px-space-md">
+                                <div class="flex flex-col gap-0.5">
+                                    <a class="font-title-sm text-title-sm text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap" href="#" onclick="openModal('modal-edit');return false;">
+                                        <span>코어 프레임워크 아키텍처 테크 리뷰</span>
+                                        <span class="material-symbols-outlined text-[16px] text-tertiary opacity-0 group-hover:opacity-100 transition-opacity">edit_document</span>
+                                    </a>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline whitespace-nowrap">DOC-8938</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors max-w-full truncate cursor-pointer" title="Tech_Spec.docx (850 KB)">
+                                    <span class="material-symbols-outlined text-[18px] text-primary">description</span>
+                                    <span class="font-label-sm text-label-sm truncate">Tech_Spec.docx</span>
+                                    <span class="text-on-surface-variant font-label-sm text-label-sm flex-shrink-0">850KB</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-semibold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>임베딩-완료
+                                </span>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <div class="inline-flex items-center justify-center gap-1.5">
+                                    <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="마크다운-보기" onclick="openModal('modal-markdown')">
+                                        <span class="material-symbols-outlined text-[18px]">markdown</span>
+                                    </button>
+                                    <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="청킹-보기" onclick="openModal('modal-chunk')">
+                                        <span class="material-symbols-outlined text-[18px]">splitscreen</span>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-right font-code-inline text-body-sm text-on-surface-variant whitespace-nowrap">2025.02.24 11:15</td>
+                        </tr>
+                        <tr class="hover:bg-surface-container-low transition-colors group border-b border-surface-container/60">
+                            <td class="py-space-md px-space-md text-center font-code-inline text-on-surface-variant font-medium text-body-sm whitespace-nowrap">22</td>
+                            <td class="py-space-md px-space-md">
+                                <div class="flex flex-col gap-0.5">
+                                    <a class="font-title-sm text-title-sm text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap" href="#" onclick="openModal('modal-edit');return false;">
+                                        <span>엔터프라이즈 솔루션 공급 표준 계약서</span>
+                                        <span class="material-symbols-outlined text-[16px] text-tertiary opacity-0 group-hover:opacity-100 transition-opacity">edit_document</span>
+                                    </a>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline whitespace-nowrap">DOC-8920</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors max-w-full truncate cursor-pointer" title="Contract_v2.0.pdf (1.8 MB)">
+                                    <span class="material-symbols-outlined text-[18px] text-error">picture_as_pdf</span>
+                                    <span class="font-label-sm text-label-sm truncate">Contract_v2.0.pdf</span>
+                                    <span class="text-on-surface-variant font-label-sm text-label-sm flex-shrink-0">1.8MB</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-variant text-primary font-label-sm text-label-sm font-semibold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>청킹-완료
+                                </span>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <div class="inline-flex items-center justify-center gap-1.5">
+                                    <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="마크다운-보기" onclick="openModal('modal-markdown')">
+                                        <span class="material-symbols-outlined text-[18px]">markdown</span>
+                                    </button>
+                                    <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="청킹-보기" onclick="openModal('modal-chunk')">
+                                        <span class="material-symbols-outlined text-[18px]">splitscreen</span>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-right font-code-inline text-body-sm text-on-surface-variant whitespace-nowrap">2025.02.23 18:20</td>
+                        </tr>
+                        <tr class="hover:bg-surface-container-low transition-colors group border-b border-surface-container/60">
+                            <td class="py-space-md px-space-md text-center font-code-inline text-on-surface-variant font-medium text-body-sm whitespace-nowrap">21</td>
+                            <td class="py-space-md px-space-md">
+                                <div class="flex flex-col gap-0.5">
+                                    <a class="font-title-sm text-title-sm text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap" href="#" onclick="openModal('modal-edit');return false;">
+                                        <span>글로벌 신규 세일즈 파이프라인 주간 회의록</span>
+                                        <span class="material-symbols-outlined text-[16px] text-tertiary opacity-0 group-hover:opacity-100 transition-opacity">edit_document</span>
+                                    </a>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline whitespace-nowrap">DOC-8911</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors max-w-full truncate cursor-pointer" title="Pipeline_Meeting_Notes.docx (1.4 MB)">
+                                    <span class="material-symbols-outlined text-[18px] text-primary">description</span>
+                                    <span class="font-label-sm text-label-sm truncate">Pipeline_Meeting_Notes.docx</span>
+                                    <span class="text-on-surface-variant font-label-sm text-label-sm flex-shrink-0">1.4MB</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>마크다운-완료
+                                </span>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <div class="inline-flex items-center justify-center gap-1.5">
+                                    <button type="button" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="마크다운-보기" onclick="openModal('modal-markdown')">
+                                        <span class="material-symbols-outlined text-[18px]">markdown</span>
+                                    </button>
+                                    <button type="button" disabled class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant disabled:opacity-30 disabled:pointer-events-none" title="청킹-보기 (미완료)">
+                                        <span class="material-symbols-outlined text-[18px]">splitscreen</span>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-right font-code-inline text-body-sm text-on-surface-variant whitespace-nowrap">2025.02.22 09:40</td>
+                        </tr>
+                        <tr class="hover:bg-surface-container-low transition-colors group">
+                            <td class="py-space-md px-space-md text-center font-code-inline text-on-surface-variant font-medium text-body-sm whitespace-nowrap">20</td>
+                            <td class="py-space-md px-space-md">
+                                <div class="flex flex-col gap-0.5">
+                                    <a class="font-title-sm text-title-sm text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap" href="#" onclick="openModal('modal-edit');return false;">
+                                        <span>2025년 마케팅 프로모션 예산 집행 계획안</span>
+                                        <span class="material-symbols-outlined text-[16px] text-tertiary opacity-0 group-hover:opacity-100 transition-opacity">edit_document</span>
+                                    </a>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline whitespace-nowrap">DOC-8894</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors max-w-full truncate cursor-pointer" title="Budget_Plan.xlsx (2.1 MB)">
+                                    <span class="material-symbols-outlined text-[18px] text-tertiary">table_chart</span>
+                                    <span class="font-label-sm text-label-sm truncate">Budget_Plan.xlsx</span>
+                                    <span class="text-on-surface-variant font-label-sm text-label-sm flex-shrink-0">2.1MB</span>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-medium">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-outline"></span>대기
+                                </span>
+                            </td>
+                            <td class="py-space-md px-space-md text-center whitespace-nowrap">
+                                <div class="inline-flex items-center justify-center gap-1.5">
+                                    <button type="button" disabled class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant disabled:opacity-30 disabled:pointer-events-none" title="마크다운-보기 (대기중)">
+                                        <span class="material-symbols-outlined text-[18px]">markdown</span>
+                                    </button>
+                                    <button type="button" disabled class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant disabled:opacity-30 disabled:pointer-events-none" title="청킹-보기 (대기중)">
+                                        <span class="material-symbols-outlined text-[18px]">splitscreen</span>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="py-space-md px-space-md text-right font-code-inline text-body-sm text-on-surface-variant whitespace-nowrap">2025.02.21 16:55</td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
-            </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ============ 문서 등록 모달 ============ -->
+<div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 backdrop-blur-sm p-4 overflow-y-auto" id="modal-register" onclick="if(event.target===this) closeModal('modal-register')">
+    <div class="relative w-full max-w-[700px] bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col my-auto">
+        <div class="w-full h-1 bg-gradient-to-r from-primary via-primary-container to-tertiary-fixed"></div>
+        <div class="px-space-xl pt-space-lg pb-space-md flex items-start justify-between bg-surface-container-lowest">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary flex-shrink-0 mt-0.5">
+                    <span class="material-symbols-outlined text-[22px]">post_add</span>
+                </div>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-headline-sm text-headline-sm text-on-surface">새 문서 등록</h2>
+                        <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">RAG Pipeline</span>
+                    </div>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">문서를 등록하면 마크다운 변환, 청킹, 임베딩 파이프라인이 순차적으로 자동 진행됩니다.</p>
+                </div>
+            </div>
+            <button aria-label="닫기" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" id="reg-close-btn" type="button">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+        <form class="px-space-xl py-space-md flex flex-col gap-y-5" id="new-document-form" onsubmit="event.preventDefault();">
+            <div class="flex flex-col gap-1.5">
+                <label class="flex items-center justify-between font-title-sm text-title-sm text-on-surface" for="doc-title">
+                    <span>문서 이름 <span class="text-error font-bold">*</span></span>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant font-normal">워크스페이스 내 식별명</span>
+                </label>
+                <input class="w-full h-11 px-3.5 bg-surface-bright text-on-surface placeholder:text-on-surface-variant/60 font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40" id="doc-title" placeholder="예: 2025 상반기 AI 서비스 기획서" required type="text">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="font-title-sm text-title-sm text-on-surface flex items-center gap-1.5">
+                        <span>첨부 파일 <span class="text-error font-bold">*</span></span>
+                        <span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">단일 파일 필수 등록</span>
+                    </label>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">최대 1개 파일만 업로드 가능</span>
+                </div>
+                <div class="p-3.5 bg-surface-container-low rounded-xl shadow-xs flex flex-col gap-2.5" id="file-selected-card">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-lg bg-surface-container-lowest shadow-xs flex items-center justify-center text-primary flex-shrink-0">
+                                <span class="material-symbols-outlined text-[24px]">picture_as_pdf</span>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-title-sm text-title-sm text-on-surface truncate max-w-[320px]">2025_AI_Roadmap_Draft.pdf</span>
+                                    <span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[12px]">check_circle</span> 준비 완료
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant mt-0.5">
+                                    <span class="font-code-inline text-code-inline font-medium">3.8 MB</span>
+                                    <span>•</span><span>PDF Document</span><span>•</span>
+                                    <span class="text-tertiary font-semibold">유효성 검증 통과</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                            <button class="px-2.5 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm hover:bg-surface-container transition-colors shadow-xs flex items-center gap-1" type="button">
+                                <span class="material-symbols-outlined text-[15px]">sync</span>파일 교체
+                            </button>
+                            <button class="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/40 transition-colors" title="파일 삭제" type="button">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-full py-1.5 px-2.5 rounded-md bg-surface-container-highest/60 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+                        <span class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[15px] text-primary">info</span>지원 형식: PDF, DOCX, HWPX, XLSX, TXT (파일당 최대 50MB)
+                        </span>
+                        <span class="font-code-inline text-code-inline text-on-surface-variant/80">1 / 1 파일 첨부됨</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="flex items-center justify-between font-title-sm text-title-sm text-on-surface" for="doc-description">
+                    <span>문서 설명 <span class="text-on-surface-variant font-normal text-label-sm">(선택)</span></span>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">AI 색인 시 컨텍스트 보조 정보로 활용</span>
+                </label>
+                <textarea class="w-full p-3 bg-surface-bright text-on-surface placeholder:text-on-surface-variant/60 font-body-sm text-body-sm rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none" id="doc-description" placeholder="문서에 대한 간략한 요약이나 키워드를 입력해 주세요." rows="3"></textarea>
+            </div>
+            <div class="p-3.5 bg-surface-container rounded-xl flex flex-col gap-2.5 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 text-primary font-title-sm text-title-sm">
+                        <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+                        <span>자동 색인 파이프라인 처리 안내</span>
+                    </div>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant font-medium">비동기 백그라운드 구동</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 pt-1">
+                    <div class="bg-surface-container-lowest p-2 rounded-lg flex flex-col items-center text-center shadow-xs">
+                        <span class="w-6 h-6 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-sm text-label-sm font-bold mb-1">1</span>
+                        <span class="font-title-sm text-[12px] text-on-surface font-semibold">대기 및 등록</span>
+                        <span class="font-label-sm text-[10px] text-on-surface-variant mt-0.5">파일 정합성 확인</span>
+                    </div>
+                    <div class="bg-surface-container-lowest p-2 rounded-lg flex flex-col items-center text-center shadow-xs">
+                        <span class="w-6 h-6 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-label-sm text-label-sm font-bold mb-1">2</span>
+                        <span class="font-title-sm text-[12px] text-on-surface font-semibold">마크다운 변환</span>
+                        <span class="font-label-sm text-[10px] text-on-surface-variant mt-0.5">표·본문 구조화</span>
+                    </div>
+                    <div class="bg-surface-container-lowest p-2 rounded-lg flex flex-col items-center text-center shadow-xs">
+                        <span class="w-6 h-6 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-label-sm text-label-sm font-bold mb-1">3</span>
+                        <span class="font-title-sm text-[12px] text-on-surface font-semibold">청킹 처리</span>
+                        <span class="font-label-sm text-[10px] text-on-surface-variant mt-0.5">최적 토큰 분할</span>
+                    </div>
+                    <div class="bg-surface-container-lowest p-2 rounded-lg flex flex-col items-center text-center shadow-xs">
+                        <span class="w-6 h-6 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-label-sm text-label-sm font-bold mb-1">4</span>
+                        <span class="font-title-sm text-[12px] text-tertiary font-bold">임베딩 완료</span>
+                        <span class="font-label-sm text-[10px] text-tertiary mt-0.5">벡터 DB 저장</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm pt-0.5">
+                    <span class="material-symbols-outlined text-[14px] text-primary">check</span>
+                    <span>문서 등록 완료 즉시 [대기] 상태로 등록되며, 모든 단계가 순차적으로 자동 실행됩니다.</span>
+                </div>
+            </div>
+        </form>
+        <div class="px-8 py-5 bg-surface-container-low flex items-center justify-end border-t border-outline-variant/30">
+            <div class="flex items-center gap-3">
+                <button class="h-10 px-5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-on-surface hover:bg-surface-container font-medium text-title-sm shadow-sm transition-colors" id="reg-cancel-btn" type="button">닫기</button>
+                <button class="h-10 px-6 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-title-sm text-title-sm flex items-center gap-2 shadow-md transition-all active:scale-[0.99] font-semibold" id="reg-submit-btn" type="button">
+                    <span class="material-symbols-outlined text-[19px]">cloud_upload</span>
+                    <span>문서 등록하기</span>
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="delete-modal" tabindex="-1" aria-labelledby="delete-modal-title" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title h6" id="delete-modal-title">문서 삭제</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+<!-- ============ 문서 수정 모달 ============ -->
+<div class="modal-overlay hidden fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-md flex items-center justify-center p-6" id="modal-edit" onclick="if(event.target===this) closeModal('modal-edit')">
+    <div class="w-full max-w-[820px] bg-surface-container-lowest rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh]">
+        <div class="px-8 pt-7 pb-5 flex items-start justify-between bg-surface-container-lowest">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-xl bg-primary-fixed text-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <span class="material-symbols-outlined text-[26px]">edit_document</span>
+                </div>
+                <div class="flex flex-col gap-1 min-w-0">
+                    <div class="flex items-center gap-2.5">
+                        <h2 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">문서 수정</h2>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm border border-outline-variant/30">
+                            <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>상태: 인덱싱 완료
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">v1.2</span>
+                    </div>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">문서의 메타데이터(이름, 설명)를 수정할 수 있습니다. 첨부파일은 데이터 무결성을 위해 수정/교체가 불가합니다.</p>
+                </div>
             </div>
-            <div class="modal-body">
-                <p class="mb-0"><strong id="delete-target"></strong> 문서를 삭제합니다. 되돌릴 수 없습니다.</p>
+            <button aria-label="창 닫기" class="w-9 h-9 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" id="closeModalBtn" type="button">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+        <div class="px-8 py-5 flex flex-col gap-6 overflow-y-auto max-h-[calc(92vh-160px)]">
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="font-title-sm text-title-sm text-on-surface flex items-center gap-1" for="docNameInput">문서 이름 <span class="text-error font-bold">*</span></label>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">워크스페이스 내 식별명</span>
+                </div>
+                <input class="w-full h-11 px-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all" id="docNameInput" type="text" value="2025 상반기 차세대 AI 검색 서비스 기획서">
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button>
-                <button type="button" class="btn btn-danger" id="delete-confirm">삭제</button>
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <label class="font-title-sm text-title-sm text-on-surface flex items-center gap-1">첨부 파일 <span class="text-on-surface-variant font-normal text-label-sm">(기존 등록 파일)</span></label>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-secondary font-label-sm text-label-sm border border-outline-variant/30">
+                        <span class="material-symbols-outlined text-[14px]">lock</span>수정 불가 (파일 고정)
+                    </span>
+                </div>
+                <div class="w-full p-4 rounded-xl bg-surface-container-high/40 border border-outline-variant/30 flex items-center justify-between shadow-sm select-none">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="w-11 h-11 rounded-lg bg-surface-container-lowest text-secondary flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <span class="material-symbols-outlined text-[26px]">picture_as_pdf</span>
+                        </div>
+                        <div class="flex flex-col min-w-0 gap-0.5">
+                            <div class="flex items-center gap-2">
+                                <span class="font-title-sm text-title-sm text-on-surface truncate font-medium">2025_AI_Roadmap_Final_v2.pdf</span>
+                                <span class="px-2 py-0.5 rounded-full bg-surface-container text-secondary font-label-sm text-label-sm flex-shrink-0 font-medium">고정됨</span>
+                            </div>
+                            <div class="flex items-center gap-3 font-label-md text-label-md text-on-surface-variant">
+                                <span>용량: <strong class="text-on-surface font-medium">4.2 MB</strong></span><span>•</span>
+                                <span>포맷: PDF (78 Pages)</span><span>•</span>
+                                <span class="text-tertiary font-medium">인덱싱 완료 (고유 식별자 연동)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-secondary font-label-sm text-label-sm flex-shrink-0 border border-outline-variant/30">
+                        <span class="material-symbols-outlined text-[16px]">lock</span><span>수정 불가</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 px-1 text-on-surface-variant font-label-sm text-label-sm">
+                    <span class="material-symbols-outlined text-[16px] text-secondary flex-shrink-0">info</span>
+                    <span>※ 첨부파일은 벡터 임베딩 및 인덱싱 무결성 유지를 위해 교체할 수 없습니다. 새 파일 등록은 신규 문서를 이용해주세요.</span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="font-title-sm text-title-sm text-on-surface flex items-center gap-1.5" for="docDescription">문서 설명 <span class="font-label-sm text-label-sm text-on-surface-variant font-normal">(선택)</span></label>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">AI 색인 시 컨텍스트 보조 정보로 활용</span>
+                </div>
+                <textarea class="w-full p-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none leading-relaxed" id="docDescription" rows="3">2025년도 상반기 DocuAI 신규 기능 론칭 및 RAG 모델 파이프라인 고도화 계획 문서입니다. 기술 아키텍처 및 세부 마일스톤 일정표 포함.</textarea>
+            </div>
+        </div>
+        <div class="px-8 py-5 bg-surface-container-low flex items-center justify-between">
+            <button class="h-10 px-3.5 rounded-lg text-error hover:bg-error-container hover:text-on-error-container font-title-sm text-title-sm flex items-center gap-1.5 transition-colors" id="deleteDocBtn" type="button">
+                <span class="material-symbols-outlined text-[18px]">delete_forever</span><span>문서 삭제</span>
+            </button>
+            <div class="flex items-center gap-3">
+                <button class="h-10 px-5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-on-surface hover:bg-surface-container font-medium text-title-sm shadow-sm transition-colors" id="cancelBtn" type="button">닫기</button>
+                <button class="h-10 px-6 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-title-sm text-title-sm flex items-center gap-2 shadow-md transition-all active:scale-[0.99]" id="saveDocBtn" type="button">
+                    <span class="material-symbols-outlined text-[18px]">check_circle</span><span>변경사항 저장</span>
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<footer th:replace="~{fragments/layout :: scripts}"></footer>
-<script th:src="@{/js/documents.js}"></script>
+<!-- ============ 마크다운 프리뷰 모달 ============ -->
+<div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 lg:p-8 bg-on-surface/40 backdrop-blur-sm" id="modal-markdown" onclick="if(event.target===this) closeModal('modal-markdown')">
+    <div class="relative flex flex-col w-full max-w-[980px] max-h-[90vh] bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-space-xl py-space-lg bg-surface-container-lowest shadow-sm z-20">
+            <div class="flex items-center gap-space-md min-w-0">
+                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-fixed text-primary flex-shrink-0">
+                    <span class="material-symbols-outlined text-[24px]">markdown</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                    <div class="flex items-center gap-space-sm flex-wrap">
+                        <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold truncate tracking-tight">AI 어시스턴트 기능 명세서 PRD</h2>
+                        <span class="px-space-xs py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold flex items-center gap-1 flex-shrink-0">
+                            <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>마크다운 완료
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md mt-0.5 truncate">
+                        <span class="font-code-inline text-code-inline px-1 py-0.2 bg-surface-container rounded text-primary">DOC-8941</span><span>·</span>
+                        <span class="truncate">파일: PRD_v1.4_final.pdf</span><span>·</span>
+                        <span class="text-outline">변환일시: 2025.02.20 14:32</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-space-sm flex-shrink-0 ml-space-md">
+                <a class="inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-title-sm text-title-sm transition-colors" download="AI_Assistant_PRD.md" href="#">
+                    <span class="material-symbols-outlined text-[18px]">download</span><span>다운로드 (.md)</span>
+                </a>
+                <button class="w-8 h-8 flex items-center justify-center rounded-xl text-outline hover:bg-surface-container hover:text-on-surface transition-colors ml-1" onclick="closeModal('modal-markdown')" title="닫기 (Esc)">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+        </div>
+        <div class="flex items-center justify-between px-space-xl py-space-sm bg-surface-container-low shadow-[0_1px_0px_rgba(0,0,0,0.03)] z-10">
+            <div class="flex items-center p-0.5 bg-surface-container rounded-lg">
+                <button class="flex items-center gap-1.5 px-space-md py-1 rounded-md bg-surface-container-lowest text-primary font-title-sm text-title-sm shadow-sm transition-all" id="tab-preview" onclick="switchTab('preview')">
+                    <span class="material-symbols-outlined text-[16px]">visibility</span><span>미리보기</span>
+                </button>
+                <button class="flex items-center gap-1.5 px-space-md py-1 rounded-md text-on-surface-variant hover:text-on-surface font-title-sm text-title-sm transition-all" id="tab-raw" onclick="switchTab('raw')">
+                    <span class="material-symbols-outlined text-[16px]">code</span><span>원문 보기 (Raw)</span>
+                </button>
+            </div>
+            <div class="flex items-center gap-space-md font-label-md text-label-md text-on-surface-variant">
+                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-outline">notes</span><span>총 <strong class="text-on-surface font-semibold">2,410</strong> 단어</span></div>
+                <span class="text-outline">/</span>
+                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-primary">neurology</span><span>예상 토큰 <strong class="text-primary font-semibold">3,850</strong> tokens</span></div>
+                <span class="text-outline">/</span><span class="text-outline">UTF-8 인코딩</span>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-space-xl bg-surface-container-lowest">
+            <div class="space-y-space-xl max-w-4xl mx-auto text-on-surface" id="content-preview">
+                <div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex items-start gap-space-md">
+                    <span class="material-symbols-outlined text-primary text-[22px] flex-shrink-0 mt-0.5">info</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-title-sm text-title-sm text-on-surface font-semibold mb-0.5">시스템 파싱 메타데이터 알림</div>
+                        <p class="font-body-md text-body-md text-on-surface-variant">💡 본 문서는 자동 색인 파이프라인 <strong>2단계 (Multi-modal OCR &amp; Markdown Normalization)</strong>를 거쳐 고정밀로 추출된 산출물입니다. 레이아웃 분할 손실율 0.02% 미만으로 검증되었습니다.</p>
+                    </div>
+                </div>
+                <article class="space-y-space-lg">
+                    <div class="space-y-space-xs pb-space-sm">
+                        <h1 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight"># 1. 개요 및 목적 (Executive Summary)</h1>
+                        <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">본 프로젝트의 핵심 과제는 사내에 분산되어 있는 대규모 비정형 문서(PDF, DOCX, HWP 등)를 고밀도 벡터 공간에 인덱싱하고, 작업자가 자연어 질의를 통해 정확한 참조 출처(Citations)와 함께 신뢰할 수 있는 답변을 1.5초 이내에 획득할 수 있도록 지원하는 <strong>엔터프라이즈 RAG 기반 AI 코파일럿 시스템</strong> 구축에 있습니다.</p>
+                    </div>
+                    <div class="space-y-space-sm pt-space-xs">
+                        <h2 class="font-headline-md text-headline-md font-semibold text-on-surface tracking-tight">## 1.1 핵심 기능 요구사항 (Core Functional Specifications)</h2>
+                        <ul class="space-y-space-xs font-body-md text-body-md text-on-surface-variant list-disc pl-5 marker:text-primary">
+                            <li><strong class="text-on-surface font-semibold">멀티포맷 레이아웃 보존 파싱:</strong> 표(Table), 캡션, 인라인 수식 구조를 원본 위계에 맞게 Markdown 형태로 정규화.</li>
+                            <li><strong class="text-on-surface font-semibold">시맨틱 단위 청킹 (Semantic Chunking):</strong> H1, H2 헤더 기준 및 단락 의미 문맥을 감지하여 500~800 토큰 단위로 동적 분할.</li>
+                            <li><strong class="text-on-surface font-semibold">하이브리드 리트리벌 (Hybrid Retrieval):</strong> Dense Vector 기반 의미론적 검색(k=10)과 BM25 희소 검색(Sparse)을 결합한 앙상블 리랭킹 지원.</li>
+                            <li><strong class="text-on-surface font-semibold">환각 방지 그라운딩 (Strict Grounding):</strong> 참조 인덱스 메타데이터가 미부합할 경우 무리한 추론을 차단하는 가드레일 프롬프트 탑재.</li>
+                        </ul>
+                    </div>
+                    <div class="space-y-space-xs pt-space-sm">
+                        <h3 class="font-title-md text-title-md font-semibold text-on-surface">### [데이터 스펙] 인덱싱 파이프라인 메타데이터 필드 정의</h3>
+                        <div class="rounded-xl overflow-hidden bg-surface-container-low shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                <tr class="bg-surface-container-high text-on-surface font-title-sm text-title-sm">
+                                    <th class="py-space-sm px-space-md">필드명 (Field)</th>
+                                    <th class="py-space-sm px-space-md">타입 (Type)</th>
+                                    <th class="py-space-sm px-space-md">필수 여부</th>
+                                    <th class="py-space-sm px-space-md">기능 및 설명</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-surface-container font-body-sm text-body-sm text-on-surface-variant">
+                                <tr>
+                                    <td class="py-space-sm px-space-md font-code-inline text-primary font-semibold">doc_id</td>
+                                    <td class="py-space-sm px-space-md font-code-inline text-on-surface">UUIDv4</td>
+                                    <td class="py-space-sm px-space-md"><span class="px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">REQUIRED</span></td>
+                                    <td class="py-space-sm px-space-md">문서 원본 고유 식별자 키</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-space-sm px-space-md font-code-inline text-primary font-semibold">chunk_index</td>
+                                    <td class="py-space-sm px-space-md font-code-inline text-on-surface">Integer</td>
+                                    <td class="py-space-sm px-space-md"><span class="px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">REQUIRED</span></td>
+                                    <td class="py-space-sm px-space-md">분할된 청크의 순차 일련번호 (0-indexed)</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-space-sm px-space-md font-code-inline text-primary font-semibold">vector_embedding</td>
+                                    <td class="py-space-sm px-space-md font-code-inline text-on-surface">Float[1536]</td>
+                                    <td class="py-space-sm px-space-md"><span class="px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">REQUIRED</span></td>
+                                    <td class="py-space-sm px-space-md">Text-embedding-3-small 산출 벡터 텐서</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-space-sm px-space-md font-code-inline text-primary font-semibold">source_page</td>
+                                    <td class="py-space-sm px-space-md font-code-inline text-on-surface">Integer[]</td>
+                                    <td class="py-space-sm px-space-md"><span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">OPTIONAL</span></td>
+                                    <td class="py-space-sm px-space-md">원본 PDF 내 위치 페이지 넘버 매핑 리스트</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="space-y-space-sm pt-space-xs">
+                        <h2 class="font-headline-md text-headline-md font-semibold text-on-surface tracking-tight">## 1.2 RAG 기반 검색 엔진 연동 방식 (API Payload Specification)</h2>
+                        <p class="font-body-md text-body-md text-on-surface-variant">파이프라인 통신을 위한 엔드포인트 질의 및 필터 페이로드 인터페이스 형식은 아래와 같이 JSON 스키마 규격을 엄격히 준수해야 합니다.</p>
+                        <div class="rounded-xl overflow-hidden bg-inverse-surface text-inverse-on-surface shadow-md">
+                            <div class="flex items-center justify-between px-space-md py-space-xs bg-surface-container-highest/10 font-code-inline text-code-inline text-outline-variant">
+                                <div class="flex items-center gap-space-xs">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed"></span>
+                                    <span class="ml-2">query_pipeline_v1.json</span>
+                                </div>
+                                <span class="text-label-sm font-label-sm uppercase tracking-wider text-outline-variant">JSON</span>
+                            </div>
+                            <pre class="p-space-md font-code-inline text-code-inline overflow-x-auto leading-relaxed text-inverse-on-surface"><code>{
+  <span class="text-tertiary-fixed-dim">"query"</span>: <span class="text-surface-variant">"분기별 매출 추세 분석 모델 적용 방식 알려줘"</span>,
+  <span class="text-tertiary-fixed-dim">"document_filter"</span>: {
+    <span class="text-tertiary-fixed-dim">"doc_id"</span>: <span class="text-surface-variant">"DOC-8941"</span>,
+    <span class="text-tertiary-fixed-dim">"status"</span>: <span class="text-surface-variant">"PARSED_READY"</span>
+  },
+  <span class="text-tertiary-fixed-dim">"retrieval_params"</span>: {
+    <span class="text-tertiary-fixed-dim">"top_k"</span>: 5,
+    <span class="text-tertiary-fixed-dim">"alpha"</span>: 0.65,
+    <span class="text-tertiary-fixed-dim">"rerank_model"</span>: <span class="text-surface-variant">"bge-reranker-large"</span>
+  },
+  <span class="text-tertiary-fixed-dim">"stream"</span>: <span class="text-primary-fixed">true</span>
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="pl-space-md py-space-xs border-l-4 border-primary-container bg-surface-container-low rounded-r-xl">
+                        <p class="font-body-md text-body-md text-on-surface-variant italic leading-relaxed">"모든 문서는 파싱 완료 시점 이후 추가 편집 없이 즉시 벡터화 큐(Queue)로 인계 가능해야 하며, 청킹 완료 전까지 데이터 불변성(Immutability)을 엄격히 보장합니다."</p>
+                        <div class="mt-1 font-label-sm text-label-sm text-primary font-semibold">— 시스템 아키텍처 원칙 문서 (Architecture Decision Record #04)</div>
+                    </div>
+                </article>
+            </div>
+            <div class="hidden max-w-4xl mx-auto" id="content-raw">
+                <div class="p-space-lg rounded-xl bg-surface-container-low font-code-inline text-code-inline leading-relaxed text-on-surface select-all overflow-x-auto whitespace-pre-wrap"># 1. 개요 및 목적 (Executive Summary)
+
+본 프로젝트의 핵심 과제는 사내에 분산되어 있는 대규모 비정형 문서(PDF, DOCX, HWP 등)를 고밀도 벡터 공간에 인덱싱하고, 작업자가 자연어 질의를 통해 정확한 참조 출처(Citations)와 함께 신뢰할 수 있는 답변을 1.5초 이내에 획득할 수 있도록 지원하는 **엔터프라이즈 RAG 기반 AI 코파일럿 시스템** 구축에 있습니다.
+
+---
+
+## 1.1 핵심 기능 요구사항 (Core Functional Specifications)
+
+- **멀티포맷 레이아웃 보존 파싱:** 표(Table), 캡션, 인라인 수식 구조를 원본 위계에 맞게 Markdown 형태로 정규화.
+- **시맨틱 단위 청킹 (Semantic Chunking):** H1, H2 헤더 기준 및 단락 의미 문맥을 감지하여 500~800 토큰 단위로 동적 분할.
+- **하이브리드 리트리벌 (Hybrid Retrieval):** Dense Vector 기반 의미론적 검색(k=10)과 BM25 희소 검색(Sparse)을 결합한 앙상블 리랭킹 지원.
+- **환각 방지 그라운딩 (Strict Grounding):** 참조 인덱스 메타데이터가 미부합할 경우 무리한 추론을 차단하는 가드레일 프롬프트 탑재.
+
+---
+
+### [데이터 스펙] 인덱싱 파이프라인 메타데이터 필드 정의
+
+| 필드명 (Field) | 타입 (Type) | 필수 여부 | 기능 및 설명 |
+| :--- | :--- | :--- | :--- |
+| `doc_id` | UUIDv4 | **REQUIRED** | 문서 원본 고유 식별자 키 |
+| `chunk_index` | Integer | **REQUIRED** | 분할된 청크의 순차 일련번호 (0-indexed) |
+| `vector_embedding` | Float[1536] | **REQUIRED** | Text-embedding-3-small 산출 벡터 텐서 |
+| `source_page` | Integer[] | OPTIONAL | 원본 PDF 내 위치 페이지 넘버 매핑 리스트 |
+
+---
+
+## 1.2 RAG 기반 검색 엔진 연동 방식 (API Payload Specification)
+
+파이프라인 통신을 위한 엔드포인트 질의 및 필터 페이로드 인터페이스 형식은 아래와 같이 JSON 스키마 규격을 엄격히 준수해야 합니다.</div>
+            </div>
+        </div>
+        <div class="px-8 py-5 bg-surface-container-low flex items-center justify-between z-20 flex-shrink-0 border-t border-surface-container">
+            <div></div>
+            <button class="h-10 px-5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-on-surface hover:bg-surface-container font-medium text-title-sm shadow-sm transition-colors" onclick="closeModal('modal-markdown')" type="button">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ 청크 프리뷰 모달 ============ -->
+<div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-inverse-surface/50 backdrop-blur-sm" id="modal-chunk" onclick="if(event.target===this) closeModal('modal-chunk')">
+    <div class="relative w-full max-w-[1080px] max-h-[90vh] bg-surface-container-lowest rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div class="flex flex-col px-space-xl pt-space-lg pb-space-md bg-surface-container-lowest shadow-sm z-10">
+            <div class="flex items-center justify-between gap-space-md">
+                <div class="flex items-center gap-space-md min-w-0">
+                    <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center flex-shrink-0 text-on-primary-fixed shadow-sm">
+                        <span class="material-symbols-outlined text-[24px]">splitscreen</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <div class="flex items-center gap-space-sm flex-wrap">
+                            <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">청크 상세 정보</h2>
+                            <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline tracking-normal">(Chunk Inspector)</span>
+                            <span class="inline-flex items-center gap-1.5 px-space-xs py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>청킹-완료
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-space-xs mt-0.5 min-w-0">
+                            <span class="font-code-inline text-code-inline text-primary font-semibold">DOC-8941</span>
+                            <span class="text-outline text-[12px]">•</span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant truncate">AI 어시스턴트 기능 명세서 PRD (최종안 v2.4)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-space-sm flex-shrink-0">
+                    <button class="h-9 px-space-md bg-surface-container text-on-surface hover:bg-surface-container-high rounded-xl font-title-sm text-title-sm flex items-center gap-space-xs transition-colors shadow-sm">
+                        <span class="material-symbols-outlined text-[18px]">download</span>전체 청크 JSON
+                    </button>
+                    <button class="w-9 h-9 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" onclick="closeModal('modal-chunk')" title="닫기 (ESC)">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center justify-between px-space-xl py-space-sm bg-surface-container-low gap-space-md">
+            <div class="relative flex-1 max-w-md">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                <input class="w-full h-8 pl-9 pr-space-sm bg-surface-container-lowest rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-outline shadow-sm focus:outline-none" placeholder="청크 내용 또는 인덱스 검색 (예: #1, functional, api)..." type="text">
+            </div>
+            <div class="flex items-center gap-space-md flex-shrink-0">
+                <span class="px-space-xs py-1 rounded-md bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">전체 (12)</span>
+            </div>
+        </div>
+        <div class="flex flex-1 min-h-0 bg-surface-container-lowest">
+            <div class="w-80 flex-shrink-0 bg-surface flex flex-col overflow-y-auto">
+                <div class="p-space-sm space-y-space-xs">
+                    <div class="p-space-md rounded-xl bg-surface-container-high cursor-pointer shadow-sm relative overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+                        <div class="flex items-center justify-between mb-1.5 pl-1">
+                            <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-code-inline text-[11px] font-bold">Chunk #01</span>
+                            <span class="font-code-inline text-code-inline text-primary font-semibold">612 Tokens</span>
+                        </div>
+                        <p class="font-title-sm text-title-sm text-on-surface font-semibold pl-1 line-clamp-1">1. 개요 및 목적 (Executive Summary)</p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant pl-1 line-clamp-2 mt-1">본 프로젝트의 핵심 과제는 사내에 분산되어 있는 대규모 비정형 문서(PDF, DOCX, HWP 등)를...</p>
+                        <div class="flex items-center justify-between mt-2 pt-2 bg-surface-container/40 rounded-lg px-2 py-1 pl-1">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">1,420 자 • p.1-2</span>
+                            <span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-tertiary font-semibold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>1536 dim
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container cursor-pointer transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-code-inline text-[11px] font-medium">Chunk #02</span>
+                            <span class="font-code-inline text-code-inline text-on-surface-variant">740 Tokens</span>
+                        </div>
+                        <p class="font-title-sm text-title-sm text-on-surface font-semibold line-clamp-1">1.1 핵심 기능 요구사항 (Core Specs)</p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1">멀티포맷 레이아웃 보존 파싱, 시맨틱 단위 청킹, 하이브리드 리트리벌(Dense + Sparse)...</p>
+                        <div class="flex items-center justify-between mt-2 pt-1 text-on-surface-variant font-label-sm text-label-sm">
+                            <span>1,680 자 • p.2-3</span><span class="text-tertiary font-medium">임베딩 완료</span>
+                        </div>
+                    </div>
+                    <div class="p-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container cursor-pointer transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-code-inline text-[11px] font-medium">Chunk #03</span>
+                            <span class="font-code-inline text-code-inline text-on-surface-variant">528 Tokens</span>
+                        </div>
+                        <p class="font-title-sm text-title-sm text-on-surface font-semibold line-clamp-1">데이터 스펙 인덱싱 메타데이터 필드 정의</p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1">doc_id, chunk_index, vector_embedding, source_page, access_level 필수 스키마...</p>
+                        <div class="flex items-center justify-between mt-2 pt-1 text-on-surface-variant font-label-sm text-label-sm">
+                            <span>1,190 자 • p.4</span><span class="text-tertiary font-medium">임베딩 완료</span>
+                        </div>
+                    </div>
+                    <div class="p-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container cursor-pointer transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-code-inline text-[11px] font-medium">Chunk #04</span>
+                            <span class="font-code-inline text-code-inline text-on-surface-variant">685 Tokens</span>
+                        </div>
+                        <p class="font-title-sm text-title-sm text-on-surface font-semibold line-clamp-1">1.2 RAG 기반 검색 엔진 연동 방식 (API Payload)</p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1">코사인 유사도 검색 및 RRF(Reciprocal Rank Fusion)를 통한 다중 랭킹 결합 산출식...</p>
+                        <div class="flex items-center justify-between mt-2 pt-1 text-on-surface-variant font-label-sm text-label-sm">
+                            <span>1,510 자 • p.5-6</span><span class="text-tertiary font-medium">임베딩 완료</span>
+                        </div>
+                    </div>
+                    <div class="p-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container cursor-pointer transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-code-inline text-[11px] font-medium">Chunk #05</span>
+                            <span class="font-code-inline text-code-inline text-on-surface-variant">590 Tokens</span>
+                        </div>
+                        <p class="font-title-sm text-title-sm text-on-surface font-semibold line-clamp-1">2.1 엔드포인트 질의 및 필터 페이로드 인터페이스</p>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1">RESTful v1/vector/retrieve 호출 시 전달되는 파라미터 규격과 헤더 암호화 인증 구조...</p>
+                        <div class="flex items-center justify-between mt-2 pt-1 text-on-surface-variant font-label-sm text-label-sm">
+                            <span>1,340 자 • p.7</span><span class="text-tertiary font-medium">임베딩 완료</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-space-xl space-y-space-lg bg-surface-container-lowest">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-space-sm">
+                        <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Chunk #01 상세 정보</span>
+                        <span class="px-space-xs py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-code-inline text-label-sm font-semibold">Sequence 1 of 12</span>
+                    </div>
+                    <div class="flex items-center gap-space-xs">
+                        <button class="h-8 px-2.5 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md text-label-md flex items-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">arrow_back</span>이전 청크
+                        </button>
+                        <button class="h-8 px-2.5 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md text-label-md flex items-center gap-1 transition-colors">
+                            다음 청크<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-4 gap-space-sm p-space-md rounded-xl bg-surface-container-low shadow-sm">
+                    <div class="flex flex-col">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">청크 고유 식별자</span>
+                        <div class="flex items-center gap-1 mt-0.5">
+                            <span class="font-code-inline text-code-inline text-on-surface font-semibold truncate">chunk_8941_0001</span>
+                            <button class="text-outline hover:text-primary transition-colors" title="ID 복사" onclick="navigator.clipboard?.writeText('chunk_8941_0001')">
+                                <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">참조 문서 원문 위치</span>
+                        <span class="font-body-md text-body-md text-on-surface font-medium mt-0.5">페이지 1-2 (Line 1 ~ 48)</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">시맨틱 헤더 계층</span>
+                        <span class="font-body-md text-body-md text-primary font-medium mt-0.5 truncate" title="문서 > 1. 개요 및 목적">문서 &gt; 1. 개요 및 목적</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">적용 임베딩 모델</span>
+                        <span class="font-code-inline text-code-inline text-on-surface font-semibold mt-0.5">text-emb-3-small (1536d)</span>
+                    </div>
+                </div>
+                <div class="flex flex-col space-y-space-xs">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-space-xs">
+                            <span class="material-symbols-outlined text-primary text-[18px]">notes</span>
+                            <span class="font-title-sm text-title-sm text-on-surface font-semibold">청크 원문 텍스트 (Chunk Text Content)</span>
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">(오버랩: 50 Tokens 포함)</span>
+                        </div>
+                        <button class="h-7 px-2 rounded-md bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm flex items-center gap-1 transition-colors" data-copy="# 1. 개요 및 목적 (Executive Summary)..." onclick="navigator.clipboard?.writeText(this.dataset.copy)">
+                            <span class="material-symbols-outlined text-[14px]">content_copy</span>텍스트 복사
+                        </button>
+                    </div>
+                    <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm leading-relaxed font-body-md text-body-md text-on-surface whitespace-pre-line select-text">
+                        <span class="font-title-md text-title-md text-primary font-bold"># 1. 개요 및 목적 (Executive Summary)</span>
+
+본 프로젝트의 핵심 과제는 사내에 분산되어 있는 대규모 비정형 문서(PDF, DOCX, HWP 등)를 고밀도 벡터 공간에 인덱싱하고, 작업자가 자연어 질의를 통해 정확한 참조 출처(Citations)와 함께 신뢰할 수 있는 답변을 1.5초 이내에 획득할 수 있도록 지원하는 엔터프라이즈 RAG 기반 AI 코파일럿 시스템 구축에 있습니다.
+
+[주요 비즈니스 목표]
+- 문서 탐색 및 지식 검색 소요 시간 기존 대비 80% 단축
+- 전사 보안 가이드라인을 준수한 문서별 접근 권한(RBAC) 실시간 필터링
+- 환각 현상(Hallucination) 방지를 위한 엄격한 Grounding 메커니즘 적용
+- 멀티모달 도표 및 차트 데이터의 구조화된 시맨틱 청킹 보존
+                    </div>
+                </div>
+                <div class="flex flex-col space-y-space-xs">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-space-xs">
+                            <span class="material-symbols-outlined text-secondary text-[18px]">schema</span>
+                            <span class="font-title-sm text-title-sm text-on-surface font-semibold">메타데이터 및 벡터 임베딩 프리뷰</span>
+                            <span class="px-space-xs py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-code-inline text-[10px] font-bold">COSINE 0.82 THRESHOLD</span>
+                        </div>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline">JSON Format</span>
+                    </div>
+                    <div class="p-space-md rounded-xl bg-surface-container-low overflow-x-auto shadow-sm">
+                        <pre class="font-code-inline text-code-inline text-on-surface leading-snug"><code>{
+  <span class="text-primary font-semibold">"chunk_id"</span>: <span class="text-tertiary">"chunk_8941_0001"</span>,
+  <span class="text-primary font-semibold">"document_id"</span>: <span class="text-tertiary">"DOC-8941"</span>,
+  <span class="text-primary font-semibold">"tokens"</span>: <span class="text-primary">612</span>,
+  <span class="text-primary font-semibold">"overlap_tokens"</span>: <span class="text-primary">50</span>,
+  <span class="text-primary font-semibold">"cosine_distance_threshold"</span>: <span class="text-primary">0.82</span>,
+  <span class="text-primary font-semibold">"source_meta"</span>: {
+    <span class="text-primary font-semibold">"page"</span>: <span class="text-on-surface">[1, 2]</span>,
+    <span class="text-primary font-semibold">"section"</span>: <span class="text-tertiary">"1. 개요 및 목적"</span>,
+    <span class="text-primary font-semibold">"has_citations"</span>: <span class="text-secondary font-bold">true</span>
+  },
+  <span class="text-primary font-semibold">"embedding_sample"</span>: [
+    <span class="text-on-surface-variant">0.014285</span>, <span class="text-on-surface-variant">-0.038192</span>, <span class="text-on-surface-variant">0.089512</span>, <span class="text-on-surface-variant">-0.002410</span>,
+    <span class="text-secondary font-semibold">"... +1532 dimensions available"</span>
+  ]
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="px-8 py-5 bg-surface-container-low flex items-center justify-end border-t border-outline-variant/30 gap-3 z-10">
+            <button class="h-10 px-5 rounded-lg bg-surface-container-lowest border border-outline-variant/30 text-on-surface hover:bg-surface-container font-medium text-title-sm shadow-sm transition-colors" onclick="closeModal('modal-chunk')" type="button">닫기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+    function switchTab(tab) {
+        const preview = document.getElementById('content-preview');
+        const raw = document.getElementById('content-raw');
+        const tabPreview = document.getElementById('tab-preview');
+        const tabRaw = document.getElementById('tab-raw');
+        const activeClasses = ['bg-surface-container-lowest', 'text-primary', 'shadow-sm'];
+        const inactiveClasses = ['text-on-surface-variant'];
+        if (tab === 'preview') {
+            preview.classList.remove('hidden');
+            raw.classList.add('hidden');
+            tabPreview.classList.add(...activeClasses);
+            tabRaw.classList.remove(...activeClasses);
+        } else {
+            preview.classList.add('hidden');
+            raw.classList.remove('hidden');
+            tabRaw.classList.add(...activeClasses);
+            tabPreview.classList.remove(...activeClasses);
+        }
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        }
+    });
+
+    (function () {
+        const closeBtn = document.getElementById('reg-close-btn');
+        const cancelBtn = document.getElementById('reg-cancel-btn');
+        const submitBtn = document.getElementById('reg-submit-btn');
+        if (closeBtn) closeBtn.addEventListener('click', () => closeModal('modal-register'));
+        if (cancelBtn) cancelBtn.addEventListener('click', () => closeModal('modal-register'));
+        if (submitBtn) {
+            submitBtn.addEventListener('click', () => {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined text-[19px] animate-spin">progress_activity</span><span>등록 및 파이프라인 생성 중...</span>';
+                setTimeout(() => {
+                    closeModal('modal-register');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined text-[19px]">cloud_upload</span><span>문서 등록하기</span>';
+                }, 800);
+            });
+        }
+    })();
+
+    (function () {
+        const closeBtn = document.getElementById('closeModalBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const saveBtn = document.getElementById('saveDocBtn');
+        const deleteBtn = document.getElementById('deleteDocBtn');
+        if (closeBtn) closeBtn.addEventListener('click', () => closeModal('modal-edit'));
+        if (cancelBtn) cancelBtn.addEventListener('click', () => closeModal('modal-edit'));
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                const original = saveBtn.innerHTML;
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span><span>저장 및 인덱싱 처리 중...</span>';
+                setTimeout(() => {
+                    saveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">done</span><span>수정 완료</span>';
+                    setTimeout(() => {
+                        closeModal('modal-edit');
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = original;
+                    }, 600);
+                }, 900);
+            });
+        }
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('이 문서를 영구 보관함에서 삭제하시겠습니까? 연결된 AI 색인 청크도 함께 회수됩니다.')) {
+                    closeModal('modal-edit');
+                }
+            });
+        }
+    })();
+</script>
+
 </body>
 </html>

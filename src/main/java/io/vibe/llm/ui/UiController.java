@@ -17,10 +17,10 @@ public class UiController {
 
     @GetMapping("/")
     public String root() {
-        return "redirect:/ui";
+        return "redirect:/ui/documents";
     }
 
-    @GetMapping("/ui")
+    @GetMapping("/ui/document")
     public String chat() {
         return "chat";
     }
