@@ -68,7 +68,7 @@ public class ScheduleService {
     @Scheduled(fixedDelay = 60_000)
     public void chunkToEmbedding() {
         documentRepository.findFirstByStatusTypeOrderByIdAsc(DocumentStatusType.CHUNKING_IN_COMPLETED).ifPresent(document -> {
-            List<org.springframework.ai.document.Document> documents = ingestAdapter.ingest(document.getChunks());
+            List<org.springframework.ai.document.Document> documents = ingestAdapter.ingest(document);
             embeddingAdapter.embed(documents);
             document.setStatusType(DocumentStatusType.COMPLETED);
 

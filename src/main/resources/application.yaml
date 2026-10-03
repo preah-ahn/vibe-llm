@@ -34,7 +34,7 @@ spring:
       base-url: http://127.0.0.1:12345/v1
       api-key : lm-studio
       chat:
-        model     : text-embedding-qwen3-embedding-0.6b
+        model     : qwen3.8-4b-distill
         max-tokens: 2048
       embedding:
         model          : text-embedding-qwen3-embedding-0.6b
@@ -63,7 +63,7 @@ mybatis:
     arg-name-based-constructor-auto-mapping: true
 
 server:
-  port: 8888
+  port: 9999
 logging:
   config: classpath:config/logback/logback.xml
 property:

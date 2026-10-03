@@ -59,6 +59,33 @@
             </div>
         </div>
     </div>
+    <style>
+        #content-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 14px;
+        }
+        #content-preview thead {
+            background-color: #e5eeff;
+        }
+        #content-preview th,
+        #content-preview td {
+            border: 1px solid #c7c4d8;
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+        #content-preview th {
+            font-weight: 600;
+            color: #0b1c30;
+        }
+        #content-preview tbody tr:nth-child(even) {
+            background-color: #eff4ff;
+        }
+        #content-preview tbody tr:hover {
+            background-color: #dce9ff;
+        }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
     <script>
         function switchTab(tab) {
