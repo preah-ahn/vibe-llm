@@ -22,12 +22,13 @@
         <logger name="org.springframework.jdbc.support"    level="INFO"  />
         <logger name="org.springframework.jdbc.datasource" level="INFO"  />
         <logger name="org.springframework.jdbc"            level="DEBUG" />
+        <logger name="org.springframework.jdbc.core.StatementCreatorUtils" level="TRACE" />
         <logger name="org.springframework.client"          level="DEBUG" />
         <logger name="springfox.documentation"             level="WARN"  />
         <logger name="jdbc.audit"                          level="OFF"   />
         <logger name="jdbc.sqltiming"                      level="OFF"   />
         <logger name="jdbc.resultset"                      level="OFF"   />
-        <logger name="jdbc.sqlonly"                        level="OFF"   />
+        <logger name="jdbc.sqlonly"                        level="DEBUG" />
         <logger name="jdbc.connection"                     level="ERROR" />
         <logger name="jdbc.resultsettable"                 level="DEBUG" />
     </springProfile>
@@ -52,12 +53,13 @@
         <logger name="org.springframework.jdbc.support"    level="INFO"  />
         <logger name="org.springframework.jdbc.datasource" level="INFO"  />
         <logger name="org.springframework.jdbc"            level="DEBUG" />
+        <logger name="org.springframework.jdbc.core.StatementCreatorUtils" level="TRACE" />
         <logger name="org.springframework.client"          level="DEBUG" />
         <logger name="springfox.documentation"             level="WARN"  />
         <logger name="jdbc.audit"                          level="OFF"   />
         <logger name="jdbc.sqltiming"                      level="OFF"   />
         <logger name="jdbc.resultset"                      level="OFF"   />
-        <logger name="jdbc.sqlonly"                        level="OFF"   />
+        <logger name="jdbc.sqlonly"                        level="DEBUG" />
         <logger name="jdbc.connection"                     level="ERROR" />
         <logger name="jdbc.resultsettable"                 level="DEBUG" />
     </springProfile>

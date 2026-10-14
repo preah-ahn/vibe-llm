@@ -1,9 +1,10 @@
-package io.vibe.llm.basis.rag.controller;
+package io.vibe.llm.basis.chart.controller;
 
-import io.vibe.llm.basis.rag.service.RagChatService;
+import io.vibe.llm.basis.chart.service.RagChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
@@ -15,6 +16,7 @@ import reactor.core.publisher.Flux;
  **********************************************************************************************************************/
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("${property.api.end-point}")
 public class RagChatController {
 
     private final RagChatService ragChatService;

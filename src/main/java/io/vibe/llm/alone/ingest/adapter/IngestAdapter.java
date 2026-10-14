@@ -1,8 +1,6 @@
 package io.vibe.llm.alone.ingest.adapter;
 
-import io.vibe.llm.basis.document.entity.DocumentChunk;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;

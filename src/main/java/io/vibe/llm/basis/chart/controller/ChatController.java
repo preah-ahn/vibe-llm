@@ -3,10 +3,7 @@ package io.vibe.llm.basis.chart.controller;
 import io.vibe.llm.basis.chart.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 /**
@@ -16,6 +13,7 @@ import reactor.core.publisher.Flux;
  **********************************************************************************************************************/
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("${property.api.end-point}")
 public class ChatController {
 
     private final ChatService chatService;
@@ -41,8 +39,8 @@ public class ChatController {
     }
 
     @GetMapping("/chat-streams")
-    public ResponseEntity<Flux<String>> getChartStream(@RequestParam(value="query", defaultValue="안녕") String query,
-                                                       @RequestParam(value="conversationId", defaultValue="default") String conversationId) {
+    public ResponseEntity<Flux<String>> getChartStream(@RequestParam(value="query") String query,
+                                                       @RequestParam(value="conversationId") String conversationId) {
         Flux<String> response = chatService.getStreamChat(query, conversationId);
         return ResponseEntity.ok(response);
     }

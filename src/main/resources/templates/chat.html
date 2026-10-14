@@ -12,9 +12,9 @@
         </div>
     </header>
     <main class="w-full pt-16 bg-surface flex-1 px-space-xl py-space-lg">
-        <div class="grid grid-cols-12 gap-space-lg w-full max-w-[1600px] mx-auto min-h-[calc(100vh-6.5rem)]">
+        <div class="grid grid-cols-12 gap-space-lg w-full max-w-[1600px] mx-auto min-h-[calc(100vh-6.5rem)] lg:h-[calc(100vh-6.5rem)] lg:grid-rows-[minmax(0,1fr)]">
             <!-- Left: 대화 기록 -->
-            <aside class="col-span-12 lg:col-span-4 xl:col-span-3 flex flex-col justify-between bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
+            <aside class="col-span-12 lg:col-span-4 xl:col-span-3 min-h-0 overflow-y-auto flex flex-col justify-between bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
                 <div class="flex flex-col gap-space-md">
                     <button class="w-full flex items-center justify-between px-space-md py-space-sm bg-primary text-on-primary rounded-lg font-title-sm text-title-sm shadow-sm hover:bg-primary-container transition-all group" id="chat-new" type="button">
                         <div class="flex items-center gap-space-sm">
@@ -79,7 +79,7 @@
                 </div>
             </aside>
             <!-- Right: 채팅 영역 -->
-            <main class="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col justify-between bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+            <main class="col-span-12 lg:col-span-8 xl:col-span-9 min-h-0 flex flex-col justify-between bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
                 <header class="flex flex-wrap items-center justify-between px-space-xl py-space-md bg-surface-container-lowest shadow-sm gap-y-3">
                     <div class="flex flex-col gap-1 min-w-0">
                         <div class="flex items-center gap-space-sm flex-wrap">
@@ -93,7 +93,7 @@
                         </button>
                     </div>
                 </header>
-                <div class="flex-1 overflow-y-auto px-space-xl py-space-xl space-y-space-lg" id="messages">
+                <div class="flex-1 min-h-0 overflow-y-auto px-space-xl py-space-xl space-y-space-lg" id="messages">
                     <p class="text-on-surface-variant font-body-sm text-body-sm text-center py-space-xl" id="chat-empty">AI에게 질문해보세요.</p>
                 </div>
                 <footer class="p-space-lg bg-surface-container-lowest border-t border-surface-container/60">
@@ -208,7 +208,8 @@
 
         const aiTextEl = appendAiMessage();
         try {
-            const res = await fetch(`/rag-chat-streams?query=${encodeURIComponent(query)}&conversationId=${encodeURIComponent(conversationId)}`);
+            const res = await fetch(`/api/chat-streams?query=${encodeURIComponent(query)}&conversationId=${encodeURIComponent(conversationId)}`);
+            // const res = await fetch(`/api/rag-chat-streams?query=${encodeURIComponent(query)}&conversationId=${encodeURIComponent(conversationId)}`);
             if (!res.ok || !res.body) {
                 throw new Error(`응답 생성 실패 (${res.status})`);
             }

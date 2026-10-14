@@ -3,13 +3,14 @@ package io.vibe.llm.basis.chart.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @since       2026.09.21
@@ -20,7 +21,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChatService {
 
-    private final ChatClient chatClient;
+    private final ChatClient  chatClient;
+    private final VectorStore vectorStore;
 
     public String getChatResponse(String query, String userId) {
         return chatClient.prompt()
@@ -45,12 +47,18 @@ public class ChatService {
     }
 
     public Flux<String> getStreamChat(String query, String conversationId) {
-        String systemMessage = new SystemPromptTemplate(new ClassPathResource("config/prompt/system-message.st")).render();
-        String userMessage = new PromptTemplate(new ClassPathResource("config/prompt/user-message.st")).render(Map.of("concept", query));
+
+        List<Document> documents = vectorStore.similaritySearch(
+                SearchRequest.builder()
+                            .topK(5)
+                            .similarityThreshold(0.3)
+                            .query(query)
+                            .build()
+        );
 
         return chatClient.prompt()
-                .system(systemMessage)
-                .user(userMessage)
+                .system  (system -> system.param("documents", documents.stream().map(Document::getText).collect(Collectors.joining("\n"))))
+                .user    (query)
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .stream()
                 .content();

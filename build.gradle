@@ -40,6 +40,8 @@ dependencies {
 	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.mapstruct:mapstruct:1.6.3'
 	runtimeOnly 'org.postgresql:postgresql'
+	// jdbc.sqlonly 등 로거(logback.xml)가 완성된 SQL 을 찍게 하는 proxy driver
+	runtimeOnly 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16'
 	compileOnly 'org.projectlombok:lombok'
 	// 애노테이션 프로세서 순서가 중요하다. lombok 이 먼저 돌아 getter/setter 를 만든 뒤
 	// mapstruct 가 그것을 보고 매핑 코드를 생성해야 한다. binding 이 둘 사이를 연결한다.

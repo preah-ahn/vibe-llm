@@ -33,9 +33,12 @@ public class AiChatConfiguration {
     public ChatClient chatClient(ChatClient.Builder builder, ChatMemory chatMemory) {
         MessageChatMemoryAdvisor messageChatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 
-        return builder.defaultAdvisors(a -> a
+        return builder
+                .defaultSystem(new ClassPathResource("config/prompt/rag-system-message.st"))
+                .defaultAdvisors(a -> a
                         .advisors(messageChatMemoryAdvisor, new SimpleLoggerAdvisor())
-                        .param(ChatMemory.CONVERSATION_ID, "default"))
+                        .param(ChatMemory.CONVERSATION_ID, "default")
+                )
                 .build();
     }
 
@@ -86,7 +89,13 @@ public class AiChatConfiguration {
      */
     @Bean
     public TokenTextSplitter tokenTextSplitter() {
-        return TokenTextSplitter.builder().withChunkSize(1000).build();
+        return TokenTextSplitter.builder()
+                .withChunkSize(800)              // 청크 1개 목표 토큰 수
+                .withMinChunkSizeChars(200)       // 청크 최소 글자 수, 미달 시 다음 청크와 병합
+                .withMinChunkLengthToEmbed(10)    // 이 글자 수 미만 청크는 임베딩 대상에서 제외
+                .withMaxNumChunks(5000)            // 문서 1개당 생성 가능한 청크 최대 개수
+                .withKeepSeparator(true)          // 분리 기준 문자(개행 등)를 청크 텍스트에 유지
+                .build();
     }
 //    public ChatClient chatClient(ChatClient.Builder builder) {
 //        return builder.defaultAdvisors(new TokenPrintAdvisor(), new SimpleLoggerAdvisor(), new SafeGuardAdvisor(List.of("games"))).build();

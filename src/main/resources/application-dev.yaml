@@ -1,8 +1,9 @@
 spring:
   datasource:
-    url     : jdbc:postgresql://localhost:54320/postgres?currentSchema=public
-    username: postgres
-    password: 1234
+    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+    url              : jdbc:log4jdbc:postgresql://localhost:54320/postgres?currentSchema=public
+    username         : postgres
+    password         : 1234
   servlet:
     multipart:
       enabled            : true
