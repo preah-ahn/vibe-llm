@@ -1,8 +1,6 @@
 package io.vibe.llm.basis.rag.service;
 
-import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
-import com.knuddels.jtokkit.api.EncodingType;
 import io.vibe.llm.alone.integrate.docling.adapter.DoclingAdapter;
 import io.vibe.llm.basis.rag.controller.AnalysisResponse;
 import io.vibe.llm.basis.rag.controller.DocumentSummary;
@@ -36,7 +34,7 @@ public class DocumentIngestService {
     private final TokenTextSplitter tokenTextSplitter;
 
     // TokenTextSplitter 가 청킹에 쓰는 것과 같은 인코딩. 미리보기 토큰 수 표시용.
-    private final Encoding tokenEncoding = Encodings.newLazyEncodingRegistry().getEncoding(EncodingType.CL100K_BASE);
+    private final Encoding tokenEncoding;
 
     @Value("${spring.ai.openai.embedding.model:}")
     private String embeddingModel;

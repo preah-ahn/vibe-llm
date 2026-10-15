@@ -44,6 +44,10 @@ public class DocumentChunk extends Base {
     @Description("토큰수")
     private Integer tokens;
 
+    @Column
+    @Description("헤딩경로")
+    private String headingPath;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_id", nullable = false)
     @Description("문서아이디")

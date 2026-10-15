@@ -19,20 +19,20 @@ import reactor.core.publisher.Flux;
 @RequestMapping("${property.api.end-point}")
 public class RagChatController {
 
-    private final RagChatService ragChatService;
-
-    @GetMapping("/rag-chats")
-    public ResponseEntity<String> ragChat(@RequestParam(value="query") String query,
-                                         @RequestParam(value="conversationId", defaultValue="default") String conversationId) {
-        String response = ragChatService.ask(query, conversationId);
-        return ResponseEntity.ok(response);
-    }
-
-    /** {@code /rag-chats} 와 같은 응답을 토큰 단위로 흘려보낸다. 비교 화면이 쓴다. */
-    @GetMapping("/rag-chat-streams")
-    public ResponseEntity<Flux<String>> ragChatStream(@RequestParam(value="query") String query,
-                                                      @RequestParam(value="conversationId", defaultValue="default") String conversationId) {
-        Flux<String> response = ragChatService.askStream(query, conversationId);
-        return ResponseEntity.ok(response);
-    }
+//    private final RagChatService ragChatService;
+//
+//    @GetMapping("/rag-chats")
+//    public ResponseEntity<String> ragChat(@RequestParam(value="query") String query,
+//                                         @RequestParam(value="conversationId", defaultValue="default") String conversationId) {
+//        String response = ragChatService.ask(query, conversationId);
+//        return ResponseEntity.ok(response);
+//    }
+//
+//    /** {@code /rag-chats} 와 같은 응답을 토큰 단위로 흘려보낸다. 비교 화면이 쓴다. */
+//    @GetMapping("/rag-chat-streams")
+//    public ResponseEntity<Flux<String>> ragChatStream(@RequestParam(value="query") String query,
+//                                                      @RequestParam(value="conversationId", defaultValue="default") String conversationId) {
+//        Flux<String> response = ragChatService.askStream(query, conversationId);
+//        return ResponseEntity.ok(response);
+//    }
 }

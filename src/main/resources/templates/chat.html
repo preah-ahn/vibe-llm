@@ -114,6 +114,7 @@
     </main>
 </div>
 
+<div th:replace="~{modal/markdown :: markdown-modal}"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
@@ -132,6 +133,73 @@
     .md-content a { color: #3525cd; text-decoration: underline; }
 </style>
 <script>
+    // modal/markdown.html 의 openMarkdownModal 이 쓰는 공용 헬퍼. document.html 과 동일하게 맞춘다.
+    function openModal(id) {
+        document.querySelector(`#${id}`).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.querySelector(`#${id}`).classList.add('hidden');
+    }
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        }
+    });
+
+    const API_BASE = '/api';
+
+    async function request(url, options = {}) {
+        const res = await fetch(url, options);
+        if (!res.ok) {
+            let message = res.statusText;
+            try { message = (await res.json()).message || message; } catch (ignored) {}
+            throw new Error(message);
+        }
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+    }
+
+    function apiFetch(path, options = {}) {
+        return request(`${API_BASE}${path}`, options);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function formatDateTime(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    const STATUS_META = {
+        WAITING               : { label: '대기',       dot: 'bg-outline',   badge: 'bg-surface-container text-on-surface-variant font-medium' },
+        MARKDOWN_IN_COMPLETED : { label: '마크다운-완료', dot: 'bg-secondary', badge: 'bg-secondary-container text-on-secondary-container font-semibold' },
+        CHUNKING_IN_COMPLETED : { label: '청킹-완료',    dot: 'bg-primary',   badge: 'bg-surface-variant text-primary font-semibold' },
+        COMPLETED             : { label: '완료',        dot: 'bg-tertiary',  badge: 'bg-tertiary-fixed text-on-tertiary-fixed font-semibold' },
+    };
+
+    function statusMeta(statusType) {
+        return STATUS_META[statusType] || STATUS_META.WAITING;
+    }
+
+    // ChatService 가 스트림 끝에 붙이는 출처 목록 구분자. 백엔드 SOURCES_MARKER 와 동일해야 한다.
+    const SOURCES_MARKER = '\u0000SOURCES\u0000';
+
+    // ChatService 가 답변 생성 전에 끼워 보내는 처리 단계 마커. 백엔드 STAGE_MARKER_* 와 형식이 같아야 한다.
+    const STAGE_MARKER_PATTERN = /\u0000STAGE:(\w+)\u0000/g;
+    const STAGE_LABELS = {
+        SEARCHING : '문서 검색 중...',
+        GENERATING: '답변 생성 중...',
+    };
+
+    function renderStagePlaceholder(el, label) {
+        el.innerHTML = `<span class="inline-flex items-center gap-1.5 text-on-surface-variant italic">
+            <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>${escapeHtml(label)}</span>`;
+    }
+
     const CONVERSATION_ID_KEY = 'ragChatConversationId';
 
     function newConversationId() {
@@ -188,14 +256,34 @@
                 <div class="bg-surface-container-low p-space-lg rounded-2xl rounded-tl-none shadow-sm">
                     <div class="md-content font-body-md text-body-md text-on-surface leading-relaxed"></div>
                 </div>
+                <div class="sources-row flex flex-wrap gap-1.5 mt-1.5"></div>
             </div>`;
         messagesEl.appendChild(row);
         scrollToBottom();
-        return row.querySelector('.md-content');
+        return { textEl: row.querySelector('.md-content'), sourcesEl: row.querySelector('.sources-row') };
     }
 
     function renderMarkdown(el, text) {
         el.innerHTML = DOMPurify.sanitize(marked.parse(text, { breaks: true }));
+    }
+
+    /** sources: [{documentId, fileName, headingPaths}]. 다운로드는 원본 파일을, 미리보기는 기존 마크다운 모달을 그대로 쓴다. */
+    function renderSources(sourcesEl, sources) {
+        sourcesEl.innerHTML = sources.map(source => {
+            const headingPaths = source.headingPaths || [];
+            const title = headingPaths.length ? source.fileName + '\n' + headingPaths.join('\n') : source.fileName;
+            return `
+            <span class="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm" title="${escapeHtml(title)}">
+                <span class="material-symbols-outlined text-[14px] text-tertiary">description</span>
+                <span class="truncate max-w-[160px]">${escapeHtml(source.fileName)}</span>
+                <a class="w-5 h-5 inline-flex items-center justify-center rounded-full hover:bg-surface-container-high hover:text-primary transition-colors" href="/api/documents/${source.documentId}/file" title="다운로드">
+                    <span class="material-symbols-outlined text-[14px]">download</span>
+                </a>
+                <button type="button" class="w-5 h-5 inline-flex items-center justify-center rounded-full hover:bg-surface-container-high hover:text-primary transition-colors" title="미리보기" onclick="openMarkdownModal(${source.documentId})">
+                    <span class="material-symbols-outlined text-[14px]">visibility</span>
+                </button>
+            </span>`;
+        }).join('');
     }
 
     async function sendMessage() {
@@ -206,7 +294,8 @@
         inputEl.value = '';
         sendBtn.disabled = true;
 
-        const aiTextEl = appendAiMessage();
+        const { textEl: aiTextEl, sourcesEl } = appendAiMessage();
+        renderStagePlaceholder(aiTextEl, STAGE_LABELS.SEARCHING);
         try {
             const res = await fetch(`/api/chat-streams?query=${encodeURIComponent(query)}&conversationId=${encodeURIComponent(conversationId)}`);
             // const res = await fetch(`/api/rag-chat-streams?query=${encodeURIComponent(query)}&conversationId=${encodeURIComponent(conversationId)}`);
@@ -222,12 +311,31 @@
                 const { done, value } = await reader.read();
                 if (done) break;
                 answer += decoder.decode(value, { stream: true });
-                renderMarkdown(aiTextEl, answer);
+
+                const stages = [...answer.matchAll(STAGE_MARKER_PATTERN)];
+                const currentStage = stages.length ? stages[stages.length - 1][1] : 'SEARCHING';
+                const withoutStages = answer.replace(STAGE_MARKER_PATTERN, '');
+                const markerIndex = withoutStages.indexOf(SOURCES_MARKER);
+                const visibleText = markerIndex === -1 ? withoutStages : withoutStages.slice(0, markerIndex);
+
+                if (visibleText) {
+                    renderMarkdown(aiTextEl, visibleText);
+                } else {
+                    renderStagePlaceholder(aiTextEl, STAGE_LABELS[currentStage] || STAGE_LABELS.SEARCHING);
+                }
                 scrollToBottom();
             }
 
-            if (!answer) {
+            const withoutStages = answer.replace(STAGE_MARKER_PATTERN, '');
+            const markerIndex = withoutStages.indexOf(SOURCES_MARKER);
+            const visibleText = markerIndex === -1 ? withoutStages : withoutStages.slice(0, markerIndex);
+            if (!visibleText) {
                 aiTextEl.textContent = '(응답 없음)';
+            }
+            if (markerIndex !== -1) {
+                try {
+                    renderSources(sourcesEl, JSON.parse(withoutStages.slice(markerIndex + SOURCES_MARKER.length)));
+                } catch (ignored) {}
             }
         } catch (error) {
             aiTextEl.textContent = `오류: ${error.message}`;

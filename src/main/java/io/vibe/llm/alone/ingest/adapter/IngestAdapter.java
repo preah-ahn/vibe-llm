@@ -24,6 +24,7 @@ public class IngestAdapter {
                         .metadata("documentId", chunk.getDocument().getId())
                         .metadata("chunkIndex", chunk.getChunkIndex())
                         .metadata("source", document.getFile().getOriginalName())
+                        .metadata("headingPath", chunk.getHeadingPath() == null ? "" : chunk.getHeadingPath())
                         .metadata("ingestedAt", document.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant().toString())
                         .build())
                 .toList();

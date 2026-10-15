@@ -106,6 +106,7 @@ public class DocumentService {
                     preview.setChars(chunk.getChars());
                     preview.setTokens(chunk.getTokens());
                     preview.setText(chunk.getText());
+                    preview.setHeadingPath(chunk.getHeadingPath());
                     return preview;
                 })
                 .toList();

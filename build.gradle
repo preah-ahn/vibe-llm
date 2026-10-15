@@ -23,6 +23,7 @@ ext {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-json'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	// Spring Boot BOM 이 관리하지 않는 의존성이라 버전을 명시한다. 4.1.0 이 Boot 4.1 기준 빌드다.

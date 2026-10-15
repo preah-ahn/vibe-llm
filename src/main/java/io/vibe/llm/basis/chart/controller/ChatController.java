@@ -25,23 +25,15 @@ public class ChatController {
 //    }
 
     @GetMapping("/chats")
-    public ResponseEntity<String> getChart(@RequestParam(value="query") String query, @RequestHeader("userId") String userId) {
-        String response = chatService.getChatResponse(query, userId);
-        return ResponseEntity.ok(response);
-    }
-
-    /** {@code /chats} 와 같은 응답을 토큰 단위로 흘려보낸다. RAG 비교 화면이 쓴다. */
-    @GetMapping("/plain-chat-streams")
-    public ResponseEntity<Flux<String>> getPlainChartStream(@RequestParam(value="query") String query,
-                                                            @RequestHeader("userId") String userId) {
-        Flux<String> response = chatService.getPlainStreamChat(query, userId);
+    public ResponseEntity<ChatAnswer> getChart(@RequestParam(value="query") String query, @RequestHeader("userId") String userId) {
+        ChatAnswer response = chatService.getChatResponse(query, userId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/chat-streams")
     public ResponseEntity<Flux<String>> getChartStream(@RequestParam(value="query") String query,
                                                        @RequestParam(value="conversationId") String conversationId) {
-        Flux<String> response = chatService.getStreamChat(query, conversationId);
+        Flux<String> response = chatService.getChatStream(query, conversationId);
         return ResponseEntity.ok(response);
     }
 }

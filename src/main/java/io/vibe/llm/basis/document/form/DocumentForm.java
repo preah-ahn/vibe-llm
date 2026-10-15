@@ -163,6 +163,7 @@ public class DocumentForm {
             private int chars;
             private int tokens;
             private String text;
+            private String headingPath;
         }
     }
 }

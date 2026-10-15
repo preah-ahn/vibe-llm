@@ -22,8 +22,9 @@
         <logger name="org.springframework.jdbc.support"    level="INFO"  />
         <logger name="org.springframework.jdbc.datasource" level="INFO"  />
         <logger name="org.springframework.jdbc"            level="DEBUG" />
-        <logger name="org.springframework.jdbc.core.StatementCreatorUtils" level="TRACE" />
         <logger name="org.springframework.client"          level="DEBUG" />
+        <logger name="org.springframework.ai.chat.client.advisor"          level="DEBUG" />
+        <logger name="org.springframework.ai.rag.preretrieval.query"       level="DEBUG" />
         <logger name="springfox.documentation"             level="WARN"  />
         <logger name="jdbc.audit"                          level="OFF"   />
         <logger name="jdbc.sqltiming"                      level="OFF"   />
@@ -53,8 +54,9 @@
         <logger name="org.springframework.jdbc.support"    level="INFO"  />
         <logger name="org.springframework.jdbc.datasource" level="INFO"  />
         <logger name="org.springframework.jdbc"            level="DEBUG" />
-        <logger name="org.springframework.jdbc.core.StatementCreatorUtils" level="TRACE" />
         <logger name="org.springframework.client"          level="DEBUG" />
+        <logger name="org.springframework.ai.chat.client.advisor"          level="DEBUG" />
+        <logger name="org.springframework.ai.rag.preretrieval.query"       level="DEBUG" />
         <logger name="springfox.documentation"             level="WARN"  />
         <logger name="jdbc.audit"                          level="OFF"   />
         <logger name="jdbc.sqltiming"                      level="OFF"   />
@@ -86,6 +88,7 @@
     </springProfile>
 
     <logger name="org.springframework.ai.chat.client.advisor" level="DEBUG" />
+    <logger name="org.springframework.ai.rag.preretrieval.query" level="DEBUG" />
 
     <root level="INFO">
         <appender-ref ref="dailyRollingFileAppender" />

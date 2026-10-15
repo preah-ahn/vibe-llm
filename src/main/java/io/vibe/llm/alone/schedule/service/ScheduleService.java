@@ -55,6 +55,7 @@ public class ScheduleService {
                             .text(chunk.text())
                             .chars(chunk.chars())
                             .tokens(chunk.tokens())
+                            .headingPath(chunk.headingPath())
                             .document(document)
                             .build())
                     .toList());

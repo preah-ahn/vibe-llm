@@ -1,11 +1,14 @@
 package io.vibe.llm.common.attach.service;
 
 import io.vibe.llm.common.attach.domain.Attach;
+import io.vibe.llm.common.attach.entity.File;
 import io.vibe.llm.common.attach.exception.AttachException;
 import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -93,5 +96,9 @@ public class AttachService {
 
     public void remove(Attach attach) {
         this.remove(attach, documentPath);
+    }
+
+    public Resource loadAsResource(File file) {
+        return new FileSystemResource(documentPath.resolve(file.getPath()).resolve(file.getName()));
     }
 }

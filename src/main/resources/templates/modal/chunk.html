@@ -2,6 +2,20 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="chunk-modal">
+    <style>
+        #chunk-detail .md-content > :first-child { margin-top: 0; }
+        #chunk-detail .md-content > :last-child { margin-bottom: 0; }
+        #chunk-detail .md-content p, #chunk-detail .md-content ul, #chunk-detail .md-content ol, #chunk-detail .md-content pre, #chunk-detail .md-content table { margin: 0.5rem 0; }
+        #chunk-detail .md-content ul { list-style: disc; padding-left: 1.25rem; }
+        #chunk-detail .md-content ol { list-style: decimal; padding-left: 1.25rem; }
+        #chunk-detail .md-content h1, #chunk-detail .md-content h2, #chunk-detail .md-content h3 { font-weight: 600; margin: 0.75rem 0 0.25rem; }
+        #chunk-detail .md-content code { font-family: monospace; font-size: 0.875em; background: rgba(0, 0, 0, 0.06); padding: 0.1rem 0.3rem; border-radius: 0.25rem; }
+        #chunk-detail .md-content pre { background: rgba(0, 0, 0, 0.06); padding: 0.75rem; border-radius: 0.5rem; overflow-x: auto; }
+        #chunk-detail .md-content pre code { background: none; padding: 0; }
+        #chunk-detail .md-content table { border-collapse: collapse; font-size: 0.875rem; }
+        #chunk-detail .md-content th, #chunk-detail .md-content td { border: 1px solid rgba(0, 0, 0, 0.15); padding: 0.25rem 0.5rem; text-align: left; }
+        #chunk-detail .md-content a { color: #3525cd; text-decoration: underline; }
+    </style>
     <!-- ============ 청크 프리뷰 모달 ============ -->
     <div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-inverse-surface/50 backdrop-blur-sm" id="modal-chunk" onclick="if(event.target===this) closeModal('modal-chunk')">
         <div class="relative w-full max-w-[1080px] max-h-[90vh] bg-surface-container-lowest rounded-2xl shadow-2xl flex flex-col overflow-hidden">
@@ -61,6 +75,7 @@
             let chunks = [];
             let currentDoc = null;
             let activeIndex = 0;
+            let viewMode = 'preview';
 
             function renderList(filterText) {
                 const listEl = document.querySelector('#chunk-list');
@@ -82,6 +97,7 @@
                                 <span class="px-2 py-0.5 rounded-full font-code-inline text-[11px] ${active ? 'bg-primary text-on-primary font-bold' : 'bg-surface-container-high text-on-surface-variant font-medium'}">Chunk #${String(c.index + 1).padStart(2, '0')}</span>
                                 <span class="font-code-inline text-code-inline ${active ? 'text-primary font-semibold' : 'text-on-surface-variant'}">${c.tokens} Tokens</span>
                             </div>
+                            ${c.headingPath ? `<p class="font-label-sm text-label-sm text-primary truncate mt-0.5 ${active ? 'pl-1' : ''}">${escapeHtml(c.headingPath)}</p>` : ''}
                             <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-1 ${active ? 'pl-1' : ''}">${escapeHtml(c.text.slice(0, 120))}${c.text.length > 120 ? '...' : ''}</p>
                             <div class="flex items-center justify-between mt-2 pt-1 ${active ? 'pl-1' : ''} text-on-surface-variant font-label-sm text-label-sm">
                                 <span>${c.chars.toLocaleString()} 자</span>
@@ -128,6 +144,10 @@
                             <span class="font-label-sm text-label-sm text-on-surface-variant">토큰 수</span>
                             <span class="font-code-inline text-code-inline text-on-surface font-semibold mt-0.5">${chunk.tokens.toLocaleString()} tokens</span>
                         </div>
+                        <div class="flex flex-col col-span-2">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">헤딩 경로</span>
+                            <span class="font-body-md text-body-md text-on-surface font-medium mt-0.5">${chunk.headingPath ? escapeHtml(chunk.headingPath) : '-'}</span>
+                        </div>
                     </div>
                     <div class="flex flex-col space-y-space-xs">
                         <div class="flex items-center justify-between">
@@ -135,19 +155,35 @@
                                 <span class="material-symbols-outlined text-primary text-[18px]">notes</span>
                                 <span class="font-title-sm text-title-sm text-on-surface font-semibold">청크 원문 텍스트 (Chunk Text Content)</span>
                             </div>
-                            <button class="h-7 px-2 rounded-md bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm flex items-center gap-1 transition-colors" id="chunk-copy-btn">
-                                <span class="material-symbols-outlined text-[14px]">content_copy</span>텍스트 복사
-                            </button>
+                            <div class="flex items-center gap-space-xs">
+                                <div class="flex items-center p-0.5 bg-surface-container rounded-lg">
+                                    <button class="flex items-center gap-1 px-2 py-1 rounded-md font-label-sm text-label-sm transition-all ${viewMode === 'preview' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}" id="chunk-tab-preview">
+                                        <span class="material-symbols-outlined text-[14px]">visibility</span>미리보기
+                                    </button>
+                                    <button class="flex items-center gap-1 px-2 py-1 rounded-md font-label-sm text-label-sm transition-all ${viewMode === 'raw' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}" id="chunk-tab-raw">
+                                        <span class="material-symbols-outlined text-[14px]">code</span>원문 보기
+                                    </button>
+                                </div>
+                                <button class="h-7 px-2 rounded-md bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm flex items-center gap-1 transition-colors" id="chunk-copy-btn">
+                                    <span class="material-symbols-outlined text-[14px]">content_copy</span>텍스트 복사
+                                </button>
+                            </div>
                         </div>
-                        <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm leading-relaxed font-body-md text-body-md text-on-surface whitespace-pre-line select-text">${escapeHtml(chunk.text)}</div>
+                        ${viewMode === 'preview'
+                            ? `<div class="md-content p-space-lg rounded-xl bg-surface-container-lowest shadow-sm leading-relaxed font-body-md text-body-md text-on-surface select-text">${typeof marked !== 'undefined' ? marked.parse(chunk.text) : `<pre class="whitespace-pre-wrap">${escapeHtml(chunk.text)}</pre>`}</div>`
+                            : `<pre class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm font-code-inline text-code-inline leading-relaxed text-on-surface select-all overflow-x-auto whitespace-pre-wrap">${escapeHtml(chunk.text)}</pre>`}
                     </div>`;
 
                 const prevBtn = document.querySelector('#chunk-prev-btn');
                 const nextBtn = document.querySelector('#chunk-next-btn');
                 const copyBtn = document.querySelector('#chunk-copy-btn');
+                const tabPreviewBtn = document.querySelector('#chunk-tab-preview');
+                const tabRawBtn = document.querySelector('#chunk-tab-raw');
                 if (prevBtn) prevBtn.addEventListener('click', () => { activeIndex -= 1; renderList(document.querySelector('#chunk-search-input').value.trim()); renderDetail(); });
                 if (nextBtn) nextBtn.addEventListener('click', () => { activeIndex += 1; renderList(document.querySelector('#chunk-search-input').value.trim()); renderDetail(); });
                 if (copyBtn) copyBtn.addEventListener('click', () => navigator.clipboard?.writeText(chunk.text));
+                if (tabPreviewBtn) tabPreviewBtn.addEventListener('click', () => { viewMode = 'preview'; renderDetail(); });
+                if (tabRawBtn) tabRawBtn.addEventListener('click', () => { viewMode = 'raw'; renderDetail(); });
             }
 
             document.querySelector('#chunk-search-input').addEventListener('input', e => renderList(e.target.value.trim()));
@@ -171,6 +207,7 @@
                     currentDoc = doc;
                     chunks = analysis.chunks;
                     activeIndex = 0;
+                    viewMode = 'preview';
 
                     const status = statusMeta(doc.statusType);
                     document.querySelector('#chunk-status-label').textContent = status.label;
