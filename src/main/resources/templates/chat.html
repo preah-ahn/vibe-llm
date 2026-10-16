@@ -297,7 +297,7 @@
         const { textEl: aiTextEl, sourcesEl } = appendAiMessage();
         renderStagePlaceholder(aiTextEl, STAGE_LABELS.SEARCHING);
         try {
-            const res = await fetch(`/api/chat-streams?query=${encodeURIComponent(query)}&conversationId=${encodeURIComponent(conversationId)}`);
+            const res = await fetch(`/api/chats?query=${encodeURIComponent(query)}&conversationId=${encodeURIComponent(conversationId)}`);
             // const res = await fetch(`/api/rag-chat-streams?query=${encodeURIComponent(query)}&conversationId=${encodeURIComponent(conversationId)}`);
             if (!res.ok || !res.body) {
                 throw new Error(`응답 생성 실패 (${res.status})`);

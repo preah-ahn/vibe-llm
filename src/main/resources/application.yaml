@@ -58,10 +58,8 @@ spring:
 
 mybatis:
   configuration:
-    # ingested_at -> ingestedAt. DocumentSummary record 생성자 매핑에 필요하다.
-    map-underscore-to-camel-case           : true
-    # record 생성자를 컬럼 순서가 아니라 이름으로 매핑한다. SELECT 절 순서가 바뀌어도 깨지지 않는다.
-    arg-name-based-constructor-auto-mapping: true
+    # ingested_at -> ingestedAt. DocumentSummary 의 setter 매핑에 필요하다.
+    map-underscore-to-camel-case: true
 
 server:
   port: 9999

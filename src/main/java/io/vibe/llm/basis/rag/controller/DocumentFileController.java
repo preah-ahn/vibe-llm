@@ -1,5 +1,9 @@
 package io.vibe.llm.basis.rag.controller;
 
+import io.vibe.llm.basis.rag.domain.AnalysisResponse;
+import io.vibe.llm.basis.rag.domain.DeleteResponse;
+import io.vibe.llm.basis.rag.domain.DocumentSummary;
+import io.vibe.llm.basis.rag.domain.IngestResponse;
 import io.vibe.llm.basis.rag.service.DocumentIngestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;

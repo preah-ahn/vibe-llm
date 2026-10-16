@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * @description demo application tests
  **********************************************************************************************************************/
 @SpringBootTest
-class DemoApplicationTests {
+class ApplicationTest {
 
 	@Test
 	void contextLoads() {

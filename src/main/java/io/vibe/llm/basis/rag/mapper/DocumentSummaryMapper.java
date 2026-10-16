@@ -1,6 +1,6 @@
 package io.vibe.llm.basis.rag.mapper;
 
-import io.vibe.llm.basis.rag.controller.DocumentSummary;
+import io.vibe.llm.basis.rag.domain.DocumentSummary;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;

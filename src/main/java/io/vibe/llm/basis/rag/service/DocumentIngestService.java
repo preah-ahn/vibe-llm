@@ -2,8 +2,8 @@ package io.vibe.llm.basis.rag.service;
 
 import com.knuddels.jtokkit.api.Encoding;
 import io.vibe.llm.alone.integrate.docling.adapter.DoclingAdapter;
-import io.vibe.llm.basis.rag.controller.AnalysisResponse;
-import io.vibe.llm.basis.rag.controller.DocumentSummary;
+import io.vibe.llm.basis.rag.domain.AnalysisResponse;
+import io.vibe.llm.basis.rag.domain.DocumentSummary;
 import io.vibe.llm.basis.rag.mapper.DocumentSummaryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
@@ -74,8 +74,8 @@ public class DocumentIngestService {
                 totalTokens,
                 embeddingModel,
                 dimensions,
-                existing.chunks(),
-                existing.ingestedAt(),
+                existing.getChunks(),
+                existing.getIngestedAt(),
                 markdown,
                 previews);
     }
@@ -101,7 +101,7 @@ public class DocumentIngestService {
     }
 
     public int deleteBySource(String source) {
-        int chunks = documentSummaryMapper.findBySource(source).chunks();
+        int chunks = documentSummaryMapper.findBySource(source).getChunks();
 
         vectorStore.delete(bySource(source));
         return chunks;

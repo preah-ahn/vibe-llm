@@ -1,13 +1,11 @@
 package io.vibe.llm.basis.chart.service;
 
-import io.vibe.llm.basis.chart.controller.ChatAnswer;
-import io.vibe.llm.basis.chart.controller.SourceRef;
+import io.vibe.llm.basis.chart.domain.SourceRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AbstractMessage;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
@@ -17,11 +15,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -55,23 +49,6 @@ public class ChatService {
 
     private final ChatClient   chatClient;
     private final ObjectMapper objectMapper;
-
-    public ChatAnswer getChatResponse(String query, String userId) {
-        ChatClientResponse response = chatClient.prompt()
-                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, userId))
-                .user(query)
-                .call()
-                .chatClientResponse();
-
-        String content = Optional.ofNullable(response.chatResponse())
-                .map(ChatResponse::getResult)
-                .map(Generation::getOutput)
-                .map(AbstractMessage::getText)
-                .orElse("");
-
-        List<SourceRef> sources = isNoAnswer(content) ? List.of() : toSourceRefs(extractDocuments(response));
-        return new ChatAnswer(content, sources);
-    }
 
     /**
      * rag-augment.st 의 "출처: 파일명" 지시는 LLM 이 빠뜨릴 수 있으므로, RetrievalAugmentationAdvisor 가
